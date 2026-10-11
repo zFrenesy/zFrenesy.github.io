@@ -409,3 +409,97 @@ def test_restricted_sources_are_never_rendered_downloaded_or_packaged(imported, 
     assert "metadata" in (contribution_page / "index.html").read_text()
     assert (contribution_page / "contribution.yaml").exists()
     assert not builder.packages and not (tmp_path / "packages").exists()
+
+
+# --- Problem page simplification and contribution routes (docs/adr/0012) ---------------
+
+def test_status_line_and_llm_status(built):
+    model = built["model"]
+    erdos1, erdos5, top = model.by_alias()["ERDOS-1"], model.by_alias()["ERDOS-5"], model.by_alias()["TOP-10"]
+    assert erdos1.status_label == "Solved"  # proved (Lean) at the source
+    assert erdos5.status_label == "Open"
+    assert top.llm_status == "Solved"  # an unverified full-solution claim
+    assert erdos5.llm_status == "Partially solved"
+    econ = model.by_alias()["ECON-C73-1"]
+    assert econ.status_label is None  # no observation: nothing invented
+    page = read_route(built, erdos1.url)
+    assert 'class="status-panel"' not in page
+    assert "Status <strong>Solved</strong>" in page and "LLM status <strong>" in page
+    assert "Status <strong>" not in read_route(built, econ.url)
+
+
+def test_latest_attempts_inline_and_rest_as_links(built):
+    model = built["model"]
+    for problem in model.problems.values():
+        page = read_route(built, problem.url)
+        inline = page.count('<article class="attempt"')
+        assert inline == min(3, len(problem.attempts))
+        for item in problem.featured:
+            assert f'id="attempt-{item.alias}"' in page and item.revision_url in page
+        for item in problem.other_attempts[:30]:
+            assert item.revision_url in page
+        assert 'id="statement"' in page and "data-collapsible" in page
+
+
+def test_featured_selection_prefers_latest():
+    from types import SimpleNamespace
+
+    from rp.site.model import Problem
+
+    def attempt(alias, date):
+        return SimpleNamespace(alias=alias, sort_date=date, is_review=False, claim_type=None, id=alias)
+
+    problem = Problem.__new__(Problem)
+    problem.contributions = [attempt("X-A1", "2026-01-01"), attempt("X-A2", "2026-03-01"), attempt("X-A3", ""),
+                             attempt("X-A4", "2026-02-01"), attempt("X-A5", "2026-03-01")]
+    assert [c.alias for c in problem.featured] == ["X-A5", "X-A2", "X-A4"]
+    assert [c.alias for c in problem.other_attempts] == ["X-A1", "X-A3"]
+
+
+def test_theme_switch_is_visible_and_applied_before_paint(built):
+    home = read_route(built, "/")
+    assert "data-theme-toggle" in home and "data-theme-label" in home
+    assert home.index("theme-init.js") < home.index("site.css")
+    assert (built["out"] / "assets" / "theme-init.js").exists()
+
+
+def test_contribute_panel_links(built):
+    import re
+    from urllib.parse import parse_qs, unquote, urlsplit
+
+    from rp.site.contribute import MAX_DEEP_LINK_PROMPT
+
+    problem = built["model"].by_alias()["TOP-10"]
+    page = read_route(built, problem.url)
+    hrefs = dict(re.findall(r'data-href="([a-z]+)" href="([^"]+)"', page))
+    issue = html.unescape(hrefs["issue"])
+    assert issue.startswith("https://github.com/we-solve-staging/research/issues/new?template=attempt.yml&problem=TOP-10")
+    claude = html.unescape(hrefs["claude"])
+    q = parse_qs(urlsplit(claude).query)["q"][0]
+    assert len(q) <= MAX_DEEP_LINK_PROMPT and "rp start TOP-10" in q and "AGENTS.md" in q
+    assert html.unescape(hrefs["codex"]).startswith("codex://threads/new?prompt=")
+    assert "originUrl=" + "https%3A%2F%2Fgithub.com%2Fwe-solve-staging%2Fresearch" in html.unescape(hrefs["codex"])
+    assert all(len(html.unescape(v)) < 8000 for v in hrefs.values())
+    assert "rp start TOP-10" in page and "rp new attempt TOP-10" in page
+    prompt = (built["out"] / "prompts" / "TOP-10.txt").read_text()
+    assert unquote(hrefs["prompt"]).endswith("/prompts/TOP-10.txt")
+    assert "quoted research material" in prompt and "Never invent citations" in prompt
+    assert "<<<" in prompt and ">>>" in prompt and "Output template" in prompt
+    for c in problem.attempts:
+        assert c.alias in prompt
+
+
+def test_link_only_statements_are_not_copied_into_prompts(built):
+    erdos = built["model"].by_alias()["ERDOS-5"]
+    prompt = (built["out"] / "prompts" / "ERDOS-5.txt").read_text()
+    assert "<<<" not in prompt and "https://www.erdosproblems.com/5" in prompt
+    assert erdos.record["rights"]["redistribution"] == "link_only"
+
+
+@pytest.mark.parametrize("route, kind", [("/contribute/", "attempt"), ("/contribute/attempt/", "attempt"),
+                                         ("/contribute/review/", "review"), ("/contribute/problem/", "problem"),
+                                         ("/contribute/agents/", "attempt")])
+def test_contribute_guides_have_panels(built, route, kind):
+    page = read_route(built, route)
+    assert f'data-contribute data-kind="{kind}"' in page
+    assert "issues/new/choose" in page  # no alias in the HTML; site.js fills from the query

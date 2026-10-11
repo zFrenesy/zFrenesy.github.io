@@ -85,6 +85,58 @@ def cmd_id(args: argparse.Namespace) -> int:
     return 0
 
 
+def _research(args: argparse.Namespace):
+    from rp.contribute.workspace import Research
+
+    return Research.here(Path(args.dir) if getattr(args, "dir", None) else None)
+
+
+def cmd_start(args: argparse.Namespace) -> int:
+    path = _research(args).start(args.alias)
+    print(f"Wrote {path}")
+    print("It holds the statement, sources and earlier contributions as quoted, untrusted material.")
+    print(f"Next: rp new attempt {args.alias.upper()}")
+    return 0
+
+
+def cmd_new(args: argparse.Namespace) -> int:
+    from rp.contribute.workspace import github_identity
+
+    research = _research(args)
+    identity = github_identity()
+    if args.what == "attempt":
+        folder = research.new_attempt(args.alias, identity)
+    elif args.what == "review":
+        folder = research.new_review(args.alias, identity)
+    else:
+        folder = research.new_problem(args.parent, identity)
+    print(f"Created {folder.relative_to(research.root)}")
+    print("Fill in every TODO, add your files under files/ and list them in the record, then run: rp check")
+    return 0
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    from rp.contribute.check import changed_paths, check_changes
+    from rp.contribute.submit import _default_base
+
+    research = _research(args)
+    base = args.base or (None if args.head else _default_base(research.root))
+    report = check_changes(research.root, changed_paths(research.root, base, args.head))
+    print(report.render())
+    return 0 if report.ok else 1
+
+
+def cmd_submit(args: argparse.Namespace) -> int:
+    from rp.contribute.submit import submit
+
+    try:
+        submit(_research(args).root, yes=args.yes, dry_run=args.dry_run, base=args.base)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="rp", description="we-solve research platform tools")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -105,5 +157,38 @@ def main(argv: Sequence[str] | None = None) -> int:
     new.add_argument("kind", choices=sorted(KIND_PREFIXES))
     new.set_defaults(func=cmd_id)
 
+    start = sub.add_parser("start", help="prepare a working context for a problem")
+    start.add_argument("alias")
+    start.add_argument("--dir", help="research repository (default: current directory)")
+    start.set_defaults(func=cmd_start)
+
+    create = sub.add_parser("new", help="create a new contribution, review or problem folder")
+    create.add_argument("what", choices=["attempt", "review", "problem"])
+    create.add_argument("alias", nargs="?", help="problem handle (attempt) or contribution handle (review)")
+    create.add_argument("--parent", help="parent problem handle for a subproblem")
+    create.add_argument("--dir")
+    create.set_defaults(func=cmd_new)
+
+    check = sub.add_parser("check", help="run the submission checks on your changes")
+    check.add_argument("--base", help="compare against this commit (default: upstream/main or origin/main, plus uncommitted work)")
+    check.add_argument("--head", help="compare up to this commit (CI); omit to include uncommitted work")
+    check.add_argument("--dir")
+    check.set_defaults(func=cmd_check)
+
+    send = sub.add_parser("submit", help="open a pull request from your own GitHub account")
+    send.add_argument("--yes", action="store_true", help="do not ask before pushing (declarations stay unconfirmed)")
+    send.add_argument("--dry-run", action="store_true", help="show the commands without running them")
+    send.add_argument("--base")
+    send.add_argument("--dir")
+    send.set_defaults(func=cmd_submit)
+
     args = parser.parse_args(argv)
-    return args.func(args)
+    if args.func is cmd_new and args.what != "problem" and not args.alias:
+        parser.error(f"rp new {args.what} needs a handle")
+    from rp.contribute.workspace import ContributorError
+
+    try:
+        return args.func(args)
+    except ContributorError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1

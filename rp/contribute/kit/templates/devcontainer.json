@@ -1,0 +1,17 @@
+// we-solve research workspace. The image, feature and platform tools are pinned.
+// TeX Live and Pandoc are not installed by default because of their size; add the
+// TeX feature locally if you want to compile .tex files.
+{
+  "name": "we-solve research",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm@sha256:589b65db720b03c96d721706005f176ff467ee879f92c2d137c04a537feffa56",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli@sha256:bd7ab48a832228f633239277552c30b353867fef2e5b037e064b4e64f0b843f2": {}
+  },
+  "postCreateCommand": "python -m pip install --require-hashes --no-deps -r https://raw.githubusercontent.com/{{PLATFORM_REPO}}/{{PLATFORM_REF}}/requirements/dev.txt && python -m pip install --no-deps git+https://github.com/{{PLATFORM_REPO}}@{{PLATFORM_REF}}",
+  "waitFor": "postCreateCommand",
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["AGENTS.md"]
+    }
+  }
+}

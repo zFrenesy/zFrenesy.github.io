@@ -100,24 +100,41 @@
   config.startup.typeset = false;
   config.startup.ready = function () {
     root.MathJax.startup.defaultReady();
-    root.MathJax.startup.promise = root.MathJax.startup.promise.then(function () {
-      return root.MathJax.typesetPromise(containers);
-    }).then(function () {
-      replaceErrors();
-      sizeWideMath();
-      if (root.ResizeObserver) {
-        var observer = new root.ResizeObserver(sizeWideMath);
-        containers.forEach(function (container) { observer.observe(container); });
-      } else root.addEventListener('resize', sizeWideMath);
-      containers.forEach(function (container) { container.dataset.mathStatus = 'ready'; });
-      // Browser navigation may have preceded equation layout. Revisit an existing
-      // anchor after typesetting without generating or rewriting reference links.
-      if (root.location.hash) {
-        var target;
-        try { target = document.getElementById(decodeURIComponent(root.location.hash.slice(1))); } catch (_) { return; }
-        if (target) target.scrollIntoView({ block: 'start' });
-      }
-    }).catch(showLoadFailure);
+    var queue = root.MathJax.startup.promise;
+    var revealed = false;
+    // Each container is its own document: reset TeX labels and equation numbers
+    // before typesetting it, so inline manuscripts on one page never interact.
+    function typeset(container) {
+      if (container.dataset.mathStatus) return;
+      container.dataset.mathStatus = 'pending';
+      queue = queue.then(function () {
+        if (root.MathJax.texReset) root.MathJax.texReset();
+        return root.MathJax.typesetPromise([container]);
+      }).then(function () {
+        replaceErrors();
+        sizeWideMath();
+        container.dataset.mathStatus = 'ready';
+        // Navigation may have preceded equation layout; revisit an existing anchor once.
+        if (!revealed && root.location.hash) {
+          revealed = true;
+          var target;
+          try { target = document.getElementById(decodeURIComponent(root.location.hash.slice(1))); } catch (_) { return; }
+          if (target) target.scrollIntoView({ block: 'start' });
+        }
+      }).catch(showLoadFailure);
+    }
+    if (root.IntersectionObserver) {
+      var observer = new root.IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) { observer.unobserve(entry.target); typeset(entry.target); }
+        });
+      }, { rootMargin: '800px 0px' });
+      containers.forEach(function (container) { observer.observe(container); });
+    } else containers.forEach(typeset);
+    if (root.ResizeObserver) {
+      var resize = new root.ResizeObserver(sizeWideMath);
+      containers.forEach(function (container) { resize.observe(container); });
+    } else root.addEventListener('resize', sizeWideMath);
   };
   config.loader.failed = showLoadFailure;
   var engine = document.createElement('script');

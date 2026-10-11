@@ -30,6 +30,8 @@ Python 3.12, JSON Schema 2020-12, Jinja2, Pandoc (restricted profile), MathJax, 
 - Verify GitHub settings (owner-run, read-only): `GITHUB_TOKEN=… python -m rp.ops.verify_settings --org <org>`
 - Build site locally (milestone 2): `python -m rp.site build --out _site`
 - Serve: `python -m http.server -d _site 8000`
+- Contributor tools (run in a research checkout): `rp start <HANDLE>`, `rp new attempt <HANDLE>` / `rp new review <HANDLE>` / `rp new problem [--parent <HANDLE>]`, `rp check`, `rp submit [--dry-run]`
+- Render the research-repository kit: `python -m rp.contribute.kit --out <research-checkout> --research <org>/research --platform <org>/<org>.github.io --ref <platform-sha> --site <url>/` (see `operations/research-kit.md`)
 
 ## Layout
 

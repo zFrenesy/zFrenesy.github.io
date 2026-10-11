@@ -1,0 +1,69 @@
+name: Review a contribution
+description: Check one exact revision of an attempt and report what you found.
+title: "Review: "
+labels: ["intake", "review"]
+body:
+  - type: markdown
+    attributes:
+      value: Everything you post here is **public immediately**. Reviews are shown by finding and scope, never as votes.
+  - type: input
+    id: contribution
+    attributes:
+      label: Contribution handle
+      description: "For example ERDOS-1-A3. It is shown on the contribution page."
+      placeholder: ERDOS-1-A3
+    validations:
+      required: true
+  - type: dropdown
+    id: finding
+    attributes:
+      label: Finding
+      options:
+        - Supports the claim
+        - Error found
+        - Gap found
+        - Counterexample
+        - Known result
+        - Reproduced
+        - Not reproduced
+        - Reference suggestion
+        - Comment
+    validations:
+      required: true
+  - type: textarea
+    id: checked_scope
+    attributes:
+      label: What you checked
+      description: Which sections, lemmas or computations you checked, and how.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: The error, gap or confirmation, with exact locations. Markdown with LaTeX maths.
+    validations:
+      required: true
+  - type: textarea
+    id: models
+    attributes:
+      label: AI models used
+      description: "One per line: provider, model name, exact version or 'unknown', and its role. Write 'none' if no AI was used."
+    validations:
+      required: true
+  - type: textarea
+    id: conflicts
+    attributes:
+      label: Conflicts of interest
+      placeholder: None
+  - type: checkboxes
+    id: declarations
+    attributes:
+      label: Declarations
+      options:
+        - label: I have the right to publish this material under CC BY 4.0, and third-party material is credited.
+          required: true
+        - label: I understand that this issue and its contents are public immediately.
+          required: true
+        - label: Every AI model and person involved is listed, with versions or "unknown".
+          required: true

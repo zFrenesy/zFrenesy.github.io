@@ -27,6 +27,17 @@ SOURCES = {
     "mo": ("mathoverflow", "MathOverflow"),
     "economics": ("economics-catalogue", "Economics catalogue"),
 }
+# Source status is shown in three words (owner decision, docs/adr/0012). Values with no
+# honest three-word reading (unknown, other) show nothing rather than a guess.
+STATUS_WORDS = {
+    "open": "Open",
+    "partially_solved": "Partially solved",
+    "solved": "Solved",
+    "proved": "Solved",
+    "disproved": "Solved",
+    "independent": "Solved",
+}
+INLINE_ATTEMPTS = 3
 CLAIM_LABELS = {
     "full_solution": "Full solution claimed",
     "full_disproof": "Full disproof claimed",
@@ -151,8 +162,36 @@ class Problem:
         return self.record["sources"][0] if self.record["sources"] else None
 
     @property
+    def status_label(self) -> str | None:
+        """Source status in three words, or None when no source observation exists (never invented)."""
+        observation = self.source_status
+        if not observation:
+            return None
+        return STATUS_WORDS.get(observation["normalised_status"])
+
+    @property
+    def llm_status(self) -> str:
+        """Strongest unverified claim among this problem's contributions, in the same three words."""
+        claims = {c.claim_type for c in self.attempts}
+        if claims & {"full_solution", "full_disproof"}:
+            return "Solved"
+        if claims & {"partial_result", "conditional_result"}:
+            return "Partially solved"
+        return "Open"
+
+    @property
     def url(self) -> str:
         return f"/problems/{self.alias}/"
+
+    @property
+    def featured(self) -> list[Contribution]:
+        """The latest attempts, shown inline on the problem page."""
+        return sorted(self.attempts, key=lambda c: (c.sort_date, c.alias), reverse=True)[:INLINE_ATTEMPTS]
+
+    @property
+    def other_attempts(self) -> list[Contribution]:
+        shown = {c.id for c in self.featured}
+        return [c for c in sorted(self.attempts, key=lambda c: (c.sort_date, c.alias), reverse=True) if c.id not in shown]
 
     @property
     def attempts(self) -> list[Contribution]:

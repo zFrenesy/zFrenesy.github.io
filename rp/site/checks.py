@@ -13,6 +13,10 @@ from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
+# Anchor (navigation) schemes. codex:// and claude-cli:// are the spec §20 agent deep links;
+# they open local applications and load nothing into the page.
+ANCHOR_SCHEMES = frozenset({"http", "https", "mailto", "tel", "codex", "claude-cli"})
+
 
 class SiteCheckError(ValueError):
     """A publication gate failed; ``report`` retains machine-readable results."""
@@ -261,7 +265,7 @@ def validate_site(out: Path, *, base_path: str = "", payload_limit: int = 200 * 
             if ref.resource:
                 if parsed.scheme.lower() != "data":
                     errors.append(f"{source}: external subresource is forbidden: {raw!r}")
-            elif parsed.scheme.lower() not in {"http", "https", "mailto", "tel"} and not raw.startswith("//"):
+            elif parsed.scheme.lower() not in ANCHOR_SCHEMES and not raw.startswith("//"):
                 errors.append(f"{source}: unsafe link scheme in {raw!r}")
             return None
         try:

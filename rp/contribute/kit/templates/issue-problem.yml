@@ -1,0 +1,71 @@
+name: Propose a problem or subproblem
+description: A literature problem, a new question, or a special case or step of an existing problem.
+title: "Problem: "
+labels: ["intake", "problem"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Everything you post here is **public immediately**. Proposed problems are listed separately and marked "not established as open or novel".
+        A subproblem must not change its parent or claim to settle it.
+  - type: input
+    id: parent
+    attributes:
+      label: Parent problem handle (for a subproblem)
+      description: Leave empty for a new, independent question.
+      placeholder: ERDOS-1
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Subproblem, special case or step of the parent
+        - Open problem from the literature
+        - New question
+    validations:
+      required: true
+  - type: textarea
+    id: statement
+    attributes:
+      label: Statement
+      description: The precise statement with every definition, assumption, quantifier and range. Markdown with LaTeX maths.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation and relation to known problems
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks and literature search
+      description: Elementary and boundary cases you tried, counterexample searches, and the literature and existing problems you searched for duplicates.
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources
+      description: For a literature problem, the proposer, the source and the evidence of its current status, with a date. Only sources you have checked.
+  - type: textarea
+    id: models
+    attributes:
+      label: AI models used
+      description: "One per line: provider, model name, exact version or 'unknown', and its role. Write 'none' if no AI was used."
+    validations:
+      required: true
+  - type: checkboxes
+    id: declarations
+    attributes:
+      label: Declarations
+      options:
+        - label: I understand that generating a question with a model establishes neither its novelty nor that it is open.
+          required: true
+        - label: I have the right to publish this material under CC BY 4.0, and third-party material is credited.
+          required: true
+        - label: I understand that this issue and its contents are public immediately.
+          required: true
+        - label: Every AI model and person involved is listed, with versions or "unknown".
+          required: true

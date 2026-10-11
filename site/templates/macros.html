@@ -1,41 +1,88 @@
 {% macro badge(text, tone='neutral') -%}<span class="badge badge-{{ tone }}">{{ text|replace('_', ' ') }}</span>{%- endmacro %}
 
+{% macro mode_label(mode) -%}{{ {'ai_only': 'AI-generated', 'human_ai': 'Human + AI', 'human_only': 'Human', 'unknown': 'Attribution unknown'}.get(mode, mode) }}{%- endmacro %}
+
 {% macro person_link(person) -%}
   {% if person_url is defined and person.get('person_ref') %}<a href="{{ url(person_url(person)) }}" data-pagefind-filter="Person">{{ person.display_name|default(person.login_at_event, true) }}</a>{% elif person.url|default('') %}<a href="{{ url(person.url) }}">{{ person.display_name|default(person.login_at_event, true) }}</a>{% elif person.login_at_event|default('') %}<a href="{{ url('/people/' ~ person.login_at_event ~ '/') }}">{{ person.display_name|default(person.login_at_event, true) }}</a>{% else %}<span>{{ person.display_name|default('Unrecorded person', true) }}</span>{% endif %}
 {%- endmacro %}
 
+{% macro status_line(problem) -%}
+<p class="status-line">{% if problem.status_label %}<span class="status-item">Status <strong>{{ problem.status_label }}</strong><span class="muted"> · {{ problem.source_status.authority }}</span></span>{% endif %}<span class="status-item">LLM status <strong>{{ problem.llm_status }}</strong> <a class="muted" href="{{ url('/policies/status/') }}" title="Claims here do not change the source status.">unverified</a></span></p>
+{%- endmacro %}
+
 {% macro contribution_card(item, show_problem=false) %}
-<article class="record-card contribution-card">
-  <div class="record-kicker"><a class="identifier" href="{{ url(item.revision_url) }}">{{ item.alias }}</a><span class="revision-label">{{ item.revision_label }}</span>{% if show_problem and item.problem %}<a class="subtle-link" href="{{ url(item.problem.url) }}">{{ item.problem.alias }}</a>{% endif %}</div>
-  <h3><a href="{{ url(item.revision_url) }}">{{ item.record.title }}</a></h3>
-  <div class="badge-row">{{ badge('Review' if item.is_review else item.claim_label, 'review' if item.is_review else 'claim') }}{{ badge({'ai_only': 'AI-generated', 'human_ai': 'Human + AI', 'human_only': 'Human', 'unknown': 'Attribution unknown'}.get(item.mode, item.mode)) }}{% if item.record.get('review') %}{{ badge(item.record.review.finding, 'review') }}{% elif item.is_review and item.legacy.get('raw_label') %}{{ badge('Legacy label: ' ~ item.legacy.raw_label, 'review') }}{% endif %}</div>
-  {% if item.record.get('claim') and item.record.claim.get('scope_statement') %}<p class="card-summary">{{ item.record.claim.scope_statement|truncate(220) }}</p>{% endif %}
-  <div class="record-meta"><span>Submitted by {{ person_link(item.record.attribution.submitter) }}</span>{% if item.model_names %}<span>{{ item.model_names|join(', ') }}</span>{% endif %}{% if item.sort_date %}<time datetime="{{ item.sort_date }}">{{ item.sort_date }}</time>{% endif %}</div>
-  <p class="record-evidence">{% if item.accepted_at %}Archived revision{% else %}Imported record{% endif %} · {{ 'Review finding; scope matters' if item.is_review else 'Correctness not established by this archive' }}</p>
-</article>
+<li class="row">
+  <a class="identifier" href="{{ url(item.revision_url) }}">{{ item.alias }}</a>
+  <a class="row-title" href="{{ url(item.revision_url) }}">{{ item.record.title }}</a>
+  <span class="row-meta">{{ 'Review' if item.is_review else item.claim_label }}{% if item.is_review and item.legacy.get('raw_label') %} ({{ item.legacy.raw_label }}){% endif %} · {{ mode_label(item.mode) }}{% if item.model_names %} · {{ item.model_names|join(', ') }}{% endif %}{% if item.sort_date %} · <time datetime="{{ item.sort_date }}">{{ item.sort_date }}</time>{% endif %}{% if show_problem and item.problem %} · <a href="{{ url(item.problem.url) }}">{{ item.problem.alias }}</a>{% endif %}</span>
+</li>
 {% endmacro %}
 
 {% macro problem_card(item) %}
-<article class="record-card problem-card">
-  <div class="record-kicker"><a class="identifier" href="{{ url(item.url) }}">{{ item.alias }}</a><span>{{ item.source[1] }}</span></div>
-  <h3><a href="{{ url(item.url) }}">{{ item.record.title }}</a></h3>
-  <div class="badge-row">{{ badge(item.record.kind) }}{% if item.source_status %}{{ badge('Source: ' ~ item.source_status.normalised_status, 'source') }}{% else %}{{ badge('Source status unknown', 'source') }}{% endif %}</div>
-  {% if item.record.get('topics') %}<p class="topic-line">{{ item.record.topics|join(' · ')|replace('-', ' ') }}</p>{% endif %}
-  <div class="record-meta"><span>{{ item.attempts|length }} {{ 'attempt' if item.attempts|length == 1 else 'attempts' }}</span><span>{{ item.reviews|length }} {{ 'review' if item.reviews|length == 1 else 'reviews' }}</span>{% if item.last_activity %}<span>Activity <time datetime="{{ item.last_activity }}">{{ item.last_activity }}</time></span>{% endif %}</div>
+<li class="row">
+  <a class="identifier" href="{{ url(item.url) }}">{{ item.alias }}</a>
+  <a class="row-title" href="{{ url(item.url) }}">{{ item.record.title }}</a>
+  <span class="row-meta">{% if item.status_label %}{{ item.status_label }} · {% endif %}LLM status: {{ item.llm_status }} · {{ item.attempts|length }} {{ 'attempt' if item.attempts|length == 1 else 'attempts' }}{% if item.last_activity %} · <time datetime="{{ item.last_activity }}">{{ item.last_activity }}</time>{% endif %}</span>
+</li>
+{% endmacro %}
+
+{% macro attempt_inline(item) %}
+<article class="attempt" id="attempt-{{ item.alias }}">
+  <header>
+    <p class="row-meta"><a class="identifier" href="{{ url(item.revision_url) }}">{{ item.alias }}</a> · {{ item.claim_label }} · {{ mode_label(item.mode) }}{% if item.model_names %} · {{ item.model_names|join(', ') }}{% endif %}{% if item.sort_date %} · <time datetime="{{ item.sort_date }}">{{ item.sort_date }}</time>{% endif %}</p>
+    <h3><a href="{{ url(item.revision_url) }}">{{ item.record.title }}</a></h3>
+  </header>
+  <div class="collapsible" data-collapsible data-more="View more" data-less="View less">
+    {% if item.rendered and item.rendered.scope_html %}<div class="tex-content mathjax-process scope-note" data-payload-exclude>{{ item.rendered.scope_html|safe }}</div>{% endif %}
+    <div class="tex-content mathjax-process" data-payload-exclude>{{ (item.rendered.html if item.rendered else '')|safe }}</div>
+  </div>
+  <p class="attempt-foot"><a href="{{ url(item.revision_url) }}">Open contribution →</a></p>
 </article>
 {% endmacro %}
 
 {% macro pager(pagination) %}
-{% if pagination and pagination.pages|default(1) > 1 %}<nav class="pagination" aria-label="Pagination">{% if pagination.previous %}<a class="button button-secondary" href="{{ url(pagination.previous) }}">← Previous</a>{% else %}<span></span>{% endif %}<span>Page {{ pagination.page }} of {{ pagination.pages }}{% if pagination.total|default(0) %} <span class="muted">· {{ pagination.total }} records</span>{% endif %}</span>{% if pagination.next %}<a class="button button-secondary" href="{{ url(pagination.next) }}">Next →</a>{% else %}<span></span>{% endif %}</nav>{% endif %}
-{% endmacro %}
-
-{% macro source_status(problem) %}
-{% set observation = problem.source_status %}
-<div class="status-source"><span class="eyebrow">Source status</span><strong>{{ (observation.normalised_status if observation else 'Unknown')|replace('_', ' ')|capitalize }}</strong>{% if observation %}<p>{% if observation.get('source_url') %}<a href="{{ observation.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ observation.authority }} ↗</a>{% else %}{{ observation.authority }}{% endif %}</p><p class="small muted">Observed {{ observation.observed_at.value }}{% if observation.raw_status != observation.normalised_status %}<br>Source wording: {{ observation.raw_status }}{% endif %}</p>{% else %}<p>No authoritative observation recorded.</p>{% endif %}</div>
+{% if pagination and pagination.pages|default(1) > 1 %}<nav class="pagination" aria-label="Pagination">{% if pagination.previous %}<a href="{{ url(pagination.previous) }}">← Previous</a>{% else %}<span></span>{% endif %}<span>Page {{ pagination.page }} of {{ pagination.pages }}{% if pagination.total|default(0) %} <span class="muted">· {{ pagination.total }} records</span>{% endif %}</span>{% if pagination.next %}<a href="{{ url(pagination.next) }}">Next →</a>{% else %}<span></span>{% endif %}</nav>{% endif %}
 {% endmacro %}
 
 {% macro rights_details(rights) %}
 {% if rights.get('holders') %}<p class="small muted">Rights holders: {{ rights.holders|join('; ') }}.</p>{% endif %}
 {% if rights.get('notes') %}<p class="small muted">{{ rights.notes }}</p>{% endif %}
-{% if rights.get('third_party') %}<ul class="rights-notes small">{% for item in rights.third_party %}<li>{{ item.description }}{% if item.get('licence') %} · {{ item.licence }}{% endif %}{% if item.get('source_url') %} · <a href="{{ item.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">Original source ↗</a>{% endif %}</li>{% endfor %}</ul>{% endif %}
+{% if rights.get('third_party') %}<ul class="small muted">{% for item in rights.third_party %}<li>{{ item.description }}{% if item.get('licence') %} · {{ item.licence }}{% endif %}{% if item.get('source_url') %} · <a href="{{ item.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">Original source</a>{% endif %}</li>{% endfor %}</ul>{% endif %}
+{% endmacro %}
+
+{#- The four §20 routes. With an alias the links are complete in the HTML; without one
+    (the /contribute/ guides) site.js fills them from ?problem=. -#}
+{% macro contribute_panel(contribute, open_first=true) %}
+{% set c = contribute %}
+<section class="contribute" id="contribute" aria-labelledby="contribute-title" data-contribute data-kind="{{ c.kind|default('attempt') }}"{% if c.alias %} data-alias="{{ c.alias }}"{% endif %} data-research="{{ c.research }}" data-platform="{{ c.platform }}" data-ref="{{ c.ref }}" data-prompt-base="{{ url('/prompts/') }}">
+  <h2 id="contribute-title">Contribute{% if c.alias %} to <span data-fill="alias">{{ c.alias }}</span>{% else %} <span data-fill="alias-label"></span>{% endif %}</h2>
+  <p class="small muted">Everything you submit is public. Submissions are checked automatically and wait in a queue; automated publication arrives in a later milestone.</p>
+  <details class="route" name="contribute-route"{% if open_first %} open{% endif %}>
+    <summary>No setup: submit through a form</summary>
+    <p>Paste your write-up or upload a PDF or ZIP. You need a GitHub account; the form asks only for what is missing.</p>
+    <p><a class="button" data-href="issue" href="{{ c.issue_url }}" rel="noopener noreferrer">Open the submission form</a></p>
+  </details>
+  {% if c.kind|default('attempt') == 'attempt' %}<details class="route" name="contribute-route">
+    <summary>Chat assistant: ChatGPT, Claude, Gemini or a local model</summary>
+    <p>Copy a self-contained research prompt, paste it into your assistant, then paste its answer into the form.</p>
+    <p><button class="button" type="button" data-copy-prompt hidden>Copy research prompt</button> <a data-href="prompt" href="{{ c.prompt_url }}">View the prompt</a> · <a data-href="issue" href="{{ c.issue_url }}" rel="noopener noreferrer">Open the form</a></p>
+  </details>{% endif %}
+  <details class="route" name="contribute-route">
+    <summary>Coding agent: Codex, Claude Code or Codespaces</summary>
+    <ul class="route-links">
+      <li><a data-href="codex" href="{{ c.codex_url }}">Open in Codex</a> <span class="small muted">desktop app</span></li>
+      <li><a data-href="claude" href="{{ c.claude_url }}">Open in Claude Code</a> <span class="small muted">needs a local clone of {{ c.research }}</span></li>
+      <li><a data-href="codespaces" href="{{ c.codespaces_url }}" rel="noopener noreferrer">Open in Codespaces</a>, then run <code data-fill="start">{{ c.start_command }}</code></li>
+    </ul>
+    <p>Or give any terminal agent (Codex CLI, Claude Code, Gemini CLI) this instruction:</p>
+    <pre class="command" id="agent-prompt"><code data-fill="agent">{{ c.agent_prompt }}</code></pre>
+    <p><button class="copy-button" type="button" data-copy-target="agent-prompt" hidden>Copy instruction</button></p>
+    <p class="small muted">The agent works in your own fork and opens the pull request from your GitHub account, so authorship stays yours.</p>
+  </details>
+  <details class="route" name="contribute-route">
+    <summary>Git: fork and open a pull request</summary>
+    <pre class="command" id="git-steps"><code data-fill="git">{{ c.git_steps }}</code></pre>
+    <p><button class="copy-button" type="button" data-copy-target="git-steps" hidden>Copy commands</button> <a data-href="agents" href="{{ url('/contribute/agents/') }}">Full guide</a></p>
+  </details>
+</section>
 {% endmacro %}

@@ -1,0 +1,19 @@
+name: check
+
+# Thin caller: the checks live in the platform repository at a pinned commit.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    uses: {{PLATFORM_REPO}}/.github/workflows/research-check.yml@{{PLATFORM_REF}}
+    with:
+      platform_repo: {{PLATFORM_REPO}}
+      platform_ref: {{PLATFORM_REF}}

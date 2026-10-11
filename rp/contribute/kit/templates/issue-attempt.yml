@@ -1,0 +1,88 @@
+name: Submit an attempt
+description: A solution, partial result, counterexample, computation or exploration for one problem.
+title: "Attempt: "
+labels: ["intake", "attempt"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Everything you post here is **public immediately**. The submission is checked and queued for screening and publication; nothing is merged by hand.
+        Paste your write-up below, or attach a PDF, images or a zip (a `.tex` file must be pasted or zipped).
+  - type: input
+    id: problem
+    attributes:
+      label: Problem handle
+      description: "For example ERDOS-1 or ECON-C21-57. It is shown on the problem page."
+      placeholder: ERDOS-1
+    validations:
+      required: true
+  - type: dropdown
+    id: claim
+    attributes:
+      label: Claim
+      description: A special case, a reformulation or a conditional result is not a full solution.
+      options:
+        - Full solution
+        - Full disproof
+        - Partial result
+        - Conditional result
+        - Computational evidence
+        - Literature report
+        - Exploration
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Exact scope
+      description: What exactly is proved, disproved or found, under which assumptions, and what remains open.
+    validations:
+      required: true
+  - type: textarea
+    id: writeup
+    attributes:
+      label: Write-up
+      description: Markdown with LaTeX maths, or TeX. You can also attach files here.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Who did the work
+      options:
+        - People with AI assistance
+        - AI only (people only prompted or submitted)
+        - People only
+    validations:
+      required: true
+  - type: textarea
+    id: models
+    attributes:
+      label: AI models used
+      description: "One per line: provider, model name, exact version or 'unknown', and its role (for example: draft, proof search, computation, editing). Write 'none' if no AI was used."
+      placeholder: "OpenAI, GPT-5, unknown, generated the draft"
+    validations:
+      required: true
+  - type: textarea
+    id: people
+    attributes:
+      label: People and roles
+      description: Everyone who contributed, with GitHub handles where they have them, and what each person did.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Only references you have checked.
+  - type: checkboxes
+    id: declarations
+    attributes:
+      label: Declarations
+      options:
+        - label: I have the right to publish this material under CC BY 4.0 (software Apache-2.0), and third-party material is credited.
+          required: true
+        - label: I understand that this issue and its contents are public immediately.
+          required: true
+        - label: Every AI model and person involved is listed, with versions or "unknown".
+          required: true

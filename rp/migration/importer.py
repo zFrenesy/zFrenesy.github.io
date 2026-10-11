@@ -31,6 +31,7 @@ from typing import Any
 
 from rp import PACKAGE_ROOT, strict_yaml
 from rp.canonical import canonical_json, digest, sha256_digest
+from rp.contribute.browse import BrowseContribution, BrowseProblem, render_index, render_readme
 from rp.catalog import Catalog, default_catalog
 from rp.fingerprint import manifest_from_blobs, scientific_fingerprint
 from rp.identity.aliases import plan_contribution_alias, plan_external_alias
@@ -177,6 +178,8 @@ class LegacyImporter:
         self.problems: dict[str, Problem] = {}
         self.people: dict[str, dict[str, Any]] = {}
         self.uncertain = 0
+        self.contributions_written: list[dict[str, Any]] = []
+        self.mapping_alias: dict[str, str] = {}
         self.counts: dict[str, int] = defaultdict(int)
 
     # ------------------------------------------------------------------ helpers
@@ -714,6 +717,8 @@ class LegacyImporter:
             authorization_binding=digest({"version": "K-legacy/1", "import": IMPORT_ID, "source": path, "blob": blob, "S": fingerprint}),
             ctx=self.ctx, cache=self.cache,
         )
+        self.contributions_written.append(record)
+        self.mapping_alias[cid] = alias
         base = str(contribution_dir(home.problem_id, cid, "legacy_record"))
         self.files[f"research/{base}/contribution.yaml"] = strict_yaml.dump(record).encode("utf-8")
         for p, b in files.items():
@@ -722,6 +727,19 @@ class LegacyImporter:
                             files={p: path.rsplit("/", 1)[1] for p in files}, scientific_fingerprint=fingerprint)
 
     # ------------------------------------------------------------------ run
+
+    def write_browse_index(self) -> None:
+        problems = [BrowseProblem(p.alias, p.problem_id, p.statement_revision_id, p.record["title"], str(problem_dir(p.problem_id)))
+                    for p in self.problems.values()]
+        by_id = {p.problem_id: p for p in self.problems.values()}
+        contributions = []
+        for record in self.contributions_written:
+            home = by_id[record["home_problem_id"]]
+            contributions.append(BrowseContribution(
+                self.mapping_alias[record["contribution_id"]], record["contribution_id"], record["revision_id"], home.alias, record["title"],
+                str(contribution_dir(home.problem_id, record["contribution_id"], record["type"]))))
+        self.files["research/browse/aliases.json"] = render_index(problems, contributions)
+        self.files["research/browse/README.md"] = render_readme(problems)
 
     def run(self) -> ImportResult:
         inventory = build_inventory(self.repo)
@@ -735,6 +753,7 @@ class LegacyImporter:
         self.files[f"research/migration/{IMPORT_ID}/owner-declarations.yaml"] = (CONFIG / "owner-declarations.yaml").read_bytes()
         self.files[f"research/migration/{IMPORT_ID}/github-snapshot.json"] = json.dumps(self.snapshot, indent=2, sort_keys=True).encode() + b"\n"
         self.files[f"research/migration/{IMPORT_ID}/mapping.jsonl"] = self.mapping.dump()
+        self.write_browse_index()
         events = self.store.export_jsonl()
         self.files["ledger/events.jsonl"] = events
         for rel, content in sorted(self.files.items()):

@@ -10,6 +10,7 @@
   <title>{{ page.title }} · {{ site.name }}</title>
   <link rel="icon" type="image/svg+xml" href="{{ url('/assets/favicon.svg') }}">
   {% if site.base_url %}<link rel="canonical" href="{{ site.base_url.rstrip('/') }}{{ page.path }}">{% endif %}
+  <script src="{{ url('/assets/theme-init.js') }}"></script>
   <link rel="stylesheet" href="{{ url('/assets/site.css') }}">
   <script src="{{ url('/assets/site.js') }}" defer></script>
   {% block head %}{% endblock %}
@@ -20,34 +21,28 @@
 </head>
 <body{% block body_attributes %} data-pagefind-ignore="all"{% endblock %}>
   <a class="skip-link" href="#main">Skip to content</a>
-  {% if site.staging %}<div class="staging-note" data-pagefind-ignore>Staging preview <span>·</span> Publication and submission workflows are in development.</div>{% endif %}
+  {% if site.staging %}<div class="staging-note" data-pagefind-ignore>Staging preview · submissions are checked and queued, not yet published automatically.</div>{% endif %}
   <header class="site-header" data-pagefind-ignore>
     <div class="shell header-inner">
-      <a class="wordmark" href="{{ url('/') }}" aria-label="{{ site.name }} home"><span class="brand-mark" aria-hidden="true">w.</span><span>{{ site.name }}</span></a>
+      <a class="wordmark" href="{{ url('/') }}">{{ site.name }}</a>
       <nav class="primary-nav" aria-label="Main navigation">
-        <details class="discipline-menu">
-          <summary>Disciplines <span aria-hidden="true">⌄</span></summary>
-          <ul>{% for discipline in site.disciplines %}<li><a href="{{ url(discipline.url) }}">{{ discipline.name }}{% if discipline.status|default('active') == 'planned' %}<small>Planned</small>{% endif %}</a></li>{% endfor %}</ul>
-        </details>
+        {% for discipline in site.disciplines %}<a href="{{ url(discipline.url) }}"{% if page.path.startswith(discipline.url) %} aria-current="page"{% endif %}>{{ discipline.name }}</a>{% endfor %}
         <a href="{{ url('/search/') }}"{% if page.path == '/search/' %} aria-current="page"{% endif %}>Search</a>
-        <a href="{{ url('/activity/') }}"{% if page.path == '/activity/' %} aria-current="page"{% endif %}>Activity</a>
         <a href="{{ url('/contribute/') }}"{% if page.path.startswith('/contribute/') %} aria-current="page"{% endif %}>Contribute</a>
         <a href="{{ url('/about/') }}"{% if page.path == '/about/' %} aria-current="page"{% endif %}>About</a>
-        {% if site.github_url %}<a class="github-link" href="{{ site.github_url }}" rel="noopener noreferrer" referrerpolicy="no-referrer">GitHub <span aria-hidden="true">↗</span></a>{% endif %}
       </nav>
-      <button class="theme-toggle" type="button" data-theme-toggle hidden aria-label="Switch to dark appearance"><span aria-hidden="true">◐</span><span class="visually-hidden" data-theme-label>Switch to dark appearance</span></button>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false"><span data-theme-label>Dark</span></button>
     </div>
   </header>
   <main id="main" class="shell" tabindex="-1">
     {% if breadcrumbs|default([]) %}<nav class="breadcrumbs" aria-label="Breadcrumb" data-pagefind-ignore><ol><li><a href="{{ url('/') }}">Home</a></li>{% for crumb in breadcrumbs %}<li>{% if crumb.url|default('') %}<a href="{{ url(crumb.url) }}">{{ crumb.label }}</a>{% else %}<span aria-current="page">{{ crumb.label }}</span>{% endif %}</li>{% endfor %}</ol></nav>{% endif %}
-    {% if notice|default('') %}<div class="notice" role="note">{{ notice }}</div>{% endif %}
+    {% if notice|default('') %}<p class="notice" role="note">{{ notice }}</p>{% endif %}
     {% block content %}{% endblock %}
   </main>
   <footer class="site-footer" data-pagefind-ignore>
-    <div class="shell footer-inner">
-      <div><a class="footer-brand" href="{{ url('/') }}">{{ site.name }}</a><p>An open workspace for questions worth pursuing.</p></div>
-      <nav aria-label="Footer navigation"><a href="{{ url('/about/') }}">About</a><a href="{{ url('/policies/status/') }}">Status policy</a><a href="{{ url('/policies/attribution/') }}">Attribution</a><a href="{{ url('/policies/licences/') }}">Licences &amp; rights</a><a href="{{ url('/policies/privacy/') }}">Privacy</a>{% if site.github_url %}<a href="{{ site.github_url }}" rel="noopener noreferrer">GitHub ↗</a>{% endif %}</nav>
-      <p class="footer-caveat">Claims and automated screening do not establish correctness. <a href="{{ url('/policies/status/') }}">Read how status and evidence are recorded.</a></p>
+    <div class="shell">
+      <p class="footer-caveat">Claims and automated screening do not establish correctness. <a href="{{ url('/policies/status/') }}">How status and evidence are recorded</a>.</p>
+      <nav class="footer-links" aria-label="Footer navigation"><a href="{{ url('/about/') }}">About</a><a href="{{ url('/activity/') }}">Activity</a><a href="{{ url('/policies/') }}">Policies</a><a href="{{ url('/policies/licences/') }}">Licences</a><a href="{{ url('/policies/privacy/') }}">Privacy</a>{% if site.github_url %}<a href="{{ site.github_url }}" rel="noopener noreferrer">GitHub</a>{% endif %}</nav>
     </div>
   </footer>
   <div class="visually-hidden" aria-live="polite" id="interaction-status"></div>
