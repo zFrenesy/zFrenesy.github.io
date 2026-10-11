@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rp"
+version = "0.1.0"
+description = "we-solve research platform: schemas, identity, ledger, validation and publication tooling"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = [
+    "PyYAML==6.0.3",
+    "jsonschema==4.25.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==8.4.2"]
+
+[tool.setuptools.packages.find]
+include = ["rp*"]
+
+[tool.setuptools.package-data]
+rp = [
+    "schemas/*.schema.json",
+    "policies/*.yaml",
+    "policies/disciplines/*.yaml",
+    "policies/classifications/*.yaml",
+    "profiles/*.yaml",
+]
+
+[tool.pytest.ini_options]
+addopts = "-p no:cacheprovider -ra --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["."]
+xfail_strict = true
+filterwarnings = ["error"]
+markers = [
+    "stress: concurrency and scale tests (run by default; select with -m stress)",
+]
