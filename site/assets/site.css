@@ -258,7 +258,9 @@ a.identifier:hover { text-decoration: underline; }
 .tex-content table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin-block: 1.5rem; font-size: .94rem; }
 .tex-content td, .tex-content th { padding: .5rem .7rem; border: 1px solid var(--line); }
 .tex-content th { background: var(--surface-soft); text-align: left; }
-.tex-content mjx-container[display="true"] { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: .25rem; }
+/* Numbered equations set an inline min-width on their outer container. Keep
+   their full inner table width, but let the outer container scroll locally. */
+.tex-content mjx-container[display="true"] { min-width: 0 !important; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: .25rem; }
 .tex-content mjx-container.tex-wide-math { display: block; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: .25rem; }
 .tex-content mjx-container { font-size: 100% !important; }
 .tex-content mjx-assistive-mml { overflow: hidden !important; }

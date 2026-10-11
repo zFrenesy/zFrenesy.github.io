@@ -38,10 +38,12 @@
 
   function sizeWideMath() {
     containers.forEach(function (container) {
-      container.querySelectorAll('mjx-container:not([display="true"])').forEach(function (output) {
+      container.querySelectorAll('mjx-container').forEach(function (output) {
         var math = output.querySelector('mjx-math');
-        var wide = math && math.getBoundingClientRect().width > container.clientWidth;
-        output.classList.toggle('tex-wide-math', Boolean(wide));
+        var display = output.getAttribute('display') === 'true';
+        var wide = display ? output.scrollWidth > output.clientWidth + 1 :
+          math && math.getBoundingClientRect().width > container.clientWidth;
+        output.classList.toggle('tex-wide-math', !display && Boolean(wide));
         if (wide) {
           output.setAttribute('tabindex', '0');
           output.setAttribute('aria-label', 'Wide equation; scroll horizontally');
