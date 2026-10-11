@@ -1,13 +1,14 @@
 {% extends 'base.html' %}
-{% from 'macros.html' import status_line, contribution_card, attempt_inline, pager, rights_details, contribute_panel, comments with context %}
+{% from 'macros.html' import status_line, contribution_card, attempt_inline, pager, contribute_panel, comments with context %}
 {% block body_attributes %}{% if pagination and pagination.page > 1 %} data-pagefind-ignore="all"{% endif %}{% endblock %}
 {% block content %}
 <article class="record-page" data-pagefind-body>
 <div class="record-main">
 <header class="page-heading">
-  <p class="row-meta"><span class="identifier" data-pagefind-meta="alias">{{ problem.alias }}</span>{% for discipline in problem.disciplines %} · <span data-pagefind-filter="Discipline">{{ discipline|replace('-', ' ') }}</span>{% endfor %}{% if problem.record.get('topics') %}{% for topic in problem.record.topics %} · <span data-pagefind-filter="Topic">{{ topic|replace('-', ' ') }}</span>{% endfor %}{% endif %}</p>
+  <p class="row-meta"><span class="identifier" data-pagefind-meta="alias">{{ problem.alias }}</span>{% for discipline in browse_disciplines(problem) %} · <span data-pagefind-filter="Discipline">{{ discipline|replace('-', ' ') }}</span>{% endfor %}{% if problem.record.get('topics') %}{% for topic in problem.record.topics %} · <span data-pagefind-filter="Topic">{{ topic|replace('-', ' ') }}</span>{% endfor %}{% endif %}</p>
   <h1 data-pagefind-meta="title">{{ problem.record.title }}</h1>
   {{ status_line(problem) }}
+  {% for code in problem.record.classifications if code.scheme == 'jel' %}{% set name = jel_name(code.code) %}<span class="visually-hidden" data-pagefind-filter="JEL">{{ code.code }}{% if name %} — {{ name }}{% endif %}</span>{% endfor %}
   <span class="visually-hidden" data-pagefind-ignore data-pagefind-filter="Kind">{{ problem.record.kind }}</span><span class="visually-hidden" data-pagefind-ignore data-pagefind-filter="Source">{{ problem.source[1] }}</span><span class="visually-hidden" data-pagefind-ignore data-pagefind-filter="Source status">{{ problem.status_label or 'not recorded' }}</span><span class="visually-hidden" data-pagefind-ignore data-pagefind-filter="LLM status">{{ problem.llm_status }}</span>
 </header>
 {% if problem.record.kind in ['proposed', 'derived'] %}<p class="notice" role="note">Proposed by a contributor. Not established as open or novel.{% if problem.record.kind == 'derived' %} This question does not change its parent problem’s status.{% endif %}</p>{% endif %}
@@ -43,8 +44,16 @@
 {% if contribute|default({}) %}{{ contribute_panel(contribute, open_first=false) }}{% endif %}
 
 <details class="record-details" open data-pagefind-ignore><summary>Record details</summary>
-  <dl class="metadata"><dt>Identifier</dt><dd>{{ problem.alias }}</dd><dt>Collection</dt><dd>{{ problem.source[1] }}</dd>{% if problem.source_status %}<dt>Source status</dt><dd>{% if problem.source_status.get('source_url') %}<a href="{{ problem.source_status.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ problem.source_status.authority }}</a>{% else %}{{ problem.source_status.authority }}{% endif %}: {{ problem.source_status.raw_status }} (observed {{ problem.source_status.observed_at.value }}). Claims here do not change the source status.</dd>{% endif %}{% for link in catalogue_links %}<dt>{{ link.label }}</dt><dd><a href="{{ link.url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ link.text }}</a></dd>{% endfor %}{% for code in problem.record.classifications %}<dt>{{ code.scheme|upper }}</dt><dd>{{ code.code }}</dd>{% endfor %}{% for event in history|default([]) %}<dt>{{ event.label }}</dt><dd>{{ event.value }}</dd>{% endfor %}</dl>
-  {{ rights_details(problem.record.rights) }}
+  {% set rank = economics_rank(problem) if 'economics' in problem.disciplines else none %}
+  <dl class="metadata">
+    <dt>Identifier</dt><dd>{{ problem.alias }}</dd>
+    <dt>Collection</dt><dd>{{ problem.source[1] }}</dd>
+    {% if rank is not none %}<dt>Rank</dt><dd>{{ rank }}</dd>{% endif %}
+    {% if problem.source_status %}<dt>Source status</dt><dd>{% if problem.source_status.get('source_url') %}<a href="{{ problem.source_status.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ problem.source_status.authority }}</a>{% else %}{{ problem.source_status.authority }}{% endif %}: {{ problem.source_status.raw_status }} (observed {{ problem.source_status.observed_at.value }}). Claims here do not change the source status.</dd>{% endif %}
+    {% for link in catalogue_links %}<dt>{{ link.label }}</dt><dd><a href="{{ link.url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ link.text }}</a></dd>{% endfor %}
+    {% for code in problem.record.classifications %}<dt>{{ code.scheme|upper }}</dt><dd>{% if code.scheme == 'jel' %}{% set name = jel_name(code.code) %}<a href="{{ url('/economics/jel/' ~ code.code ~ '/') }}">{{ code.code }}{% if name %} — {{ name }}{% endif %}</a>{% else %}{{ code.code }}{% endif %}</dd>{% endfor %}
+    {% for event in history|default([]) if event.label != 'Statement revision' %}<dt>{{ event.label }}</dt><dd>{{ event.value }}</dd>{% endfor %}
+  </dl>
 </details>
 </aside>
 </article>

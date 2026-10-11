@@ -1,10 +1,28 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import problem_card, contribution_card, pager with context %}
+{% block head %}{% if catalogue_search|default({}) %}<script src="{{ url('/assets/catalogue-search.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
 <header class="page-heading"><h1>{{ heading|default(page.title, true) }}</h1>{% if intro|default('') %}<p class="lede">{{ intro }}</p>{% endif %}</header>
 {% if groups|default([]) %}<nav class="group-links" aria-label="Browse this collection"><ul>{% for group in groups %}<li><a href="{{ url(group.url) }}">{{ group.title }}</a>{% if group.count is defined and group.count != '' %} <span class="muted">{{ group.count }}</span>{% endif %}</li>{% endfor %}</ul></nav>{% endif %}
 {% if filters|default([]) %}<nav class="group-links" aria-label="Collection views"><ul>{% for filter in filters %}<li><a href="{{ url(filter.url) }}"{% if filter.active|default(false) %} aria-current="page"{% endif %}>{{ filter.label }}</a>{% if filter.count is defined %} <span class="muted">{{ filter.count }}</span>{% endif %}</li>{% endfor %}</ul></nav>{% endif %}
-<section aria-label="Records">
+{% if jel_groups|default([]) %}<details class="jel-browse"><summary>Browse by JEL classification</summary><nav aria-label="JEL classifications"><ul>{% for group in jel_groups %}<li><a href="{{ url(group.url) }}"><strong>{{ group.code }}</strong> · {{ group.name }}</a> <span class="muted">{{ group.count }}</span></li>{% endfor %}</ul></nav></details>{% endif %}
+{% if catalogue_search|default({}) %}
+<section id="economics-catalogue-search" class="catalogue-search" data-index-url="{{ url(catalogue_search.index_url) }}" data-base-path="{{ site.base_path }}" data-jel-code="{{ catalogue_search.jel_code|default('') }}" aria-label="Search economics catalogue" hidden>
+  <form role="search">
+    <label for="economics-query">Search economics</label>
+    <div class="catalogue-search-controls"><input id="economics-query" name="q" type="search" placeholder="JEL code, subject, or problem" autocomplete="off" aria-describedby="catalogue-search-status"><button class="copy-button" type="reset" disabled>Clear</button></div>
+  </form>
+  <p id="catalogue-search-status" class="small muted" role="status">Search all problems{% if catalogue_search.jel_code|default('') %} in this JEL classification{% endif %} by JEL code or name, title, or problem identifier.</p>
+  <section id="catalogue-search-results" aria-labelledby="catalogue-results-heading" hidden>
+    <h2 id="catalogue-results-heading" tabindex="-1">Search results</h2>
+    <ul class="rows"></ul>
+    <p class="catalogue-search-empty" hidden>No matching problems. Try another JEL code, subject, or problem identifier.</p>
+    <nav class="pagination" aria-label="Search result pages" hidden><button class="copy-button" type="button" data-search-previous>← Previous</button><span data-search-page></span><button class="copy-button" type="button" data-search-next>Next →</button></nav>
+  </section>
+</section>
+<noscript><p class="small muted">Use the JEL classification links and catalogue pages below to browse economics. Searching by code or name requires JavaScript.</p></noscript>
+{% endif %}
+<section{% if catalogue_search|default({}) %} id="catalogue-static-records"{% endif %} aria-label="Records">
   {% if pagination|default({}) and pagination.total is defined %}<p class="small muted">{{ '{:,}'.format(pagination.total) }} records · <a href="{{ url('/search/') }}">Search and filter</a></p>{% endif %}
   {% if problems|default([]) %}<ul class="rows">{% for item in problems %}{{ problem_card(item) }}{% endfor %}</ul>
   {% elif contributions|default([]) %}<ul class="rows">{% for item in contributions %}{{ contribution_card(item, true) }}{% endfor %}</ul>

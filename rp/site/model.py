@@ -179,7 +179,9 @@ class Problem:
 
     @property
     def llm_status(self) -> str:
-        """Strongest unverified claim among this problem's contributions, in the same three words."""
+        """A solved source status, otherwise the strongest unverified attempt claim."""
+        if self.status_label == "Solved":
+            return "Solved"
         claims = {c.claim_type for c in self.attempts}
         if claims & {"full_solution", "full_disproof"}:
             return "Solved"

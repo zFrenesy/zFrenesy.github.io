@@ -84,6 +84,51 @@ def test_problem_links_keep_original_authority_and_named_catalogues(built):
     assert 'https://www.unsolvedmath.com/problems/OWR-010' in top
 
 
+def test_problem_sidebar_omits_internal_statement_and_rights_notes(built):
+    page = read_route(built, '/problems/ERDOS-1/')
+    assert 'Statement revision' not in page
+    assert 'Rights holders:' not in page
+    assert 'Attributed statement excerpt from' not in page
+    assert 'Statement licence:' in page and 'Original problem on erdosproblems.com' in page
+    assert 'Go to contribution →' in page and 'Open contribution →' not in page
+
+
+def test_economics_has_ranked_full_catalogue_search_and_jel_browse(built):
+    from rp.site.rankings import load_economics_rankings
+
+    for route in ['/economics/', '/economics/problems/', '/economics/sources/economics-catalogue/']:
+        page = read_route(built, route)
+        assert 'id="economics-query"' in page and 'assets/catalogue-search.js' in page
+        assert '/research/economics/jel/C73/' in page and 'Dynamic Games' in page
+        assert 'Rank ' + str(load_economics_rankings()['ECON-C73-1']) in page
+    index = json.loads((built['out'] / 'api/v1/catalogues/economics.json').read_text())['problems']
+    economics = [p for p in built['model'].problems.values() if 'economics' in p.disciplines]
+    assert {r['alias'] for r in index} == {p.alias for p in economics}
+    record = next(r for r in index if r['alias'] == 'ECON-C73-1')
+    assert record['jel'] == [{'code': 'C73', 'name': 'Stochastic and Dynamic Games - Evolutionary Games - Repeated Games'}]
+    assert 'Game Theory and Bargaining Theory' in record['search_terms']
+    assert record['url'] == '/problems/ECON-C73-1/'
+    jel_page = read_route(built, '/economics/jel/C7/')
+    assert 'data-jel-code="C7"' in jel_page and 'ECON-C73-1' in jel_page
+    problem_page = read_route(built, '/problems/ECON-C73-1/')
+    assert 'data-pagefind-filter="JEL">C73' in problem_page and 'Dynamic Games' in problem_page
+
+
+def test_computer_science_top_problems_cross_list_without_duplicate_records(built):
+    problem = built['model'].by_alias()['TOP-30006001']
+    # This is a presentation cross-listing; canonical discipline metadata stays intact.
+    assert problem.disciplines == ['computer-science']
+    for discipline in ['mathematics', 'computer-science']:
+        page = read_route(built, f'/{discipline}/sources/top-open-problems/')
+        assert '/research' + problem.url in page
+        facets = json.loads((built['out'] / f'api/v1/facets/{discipline}.json').read_text())
+        assert sum(p['alias'] == problem.alias for p in facets) == 1
+    problem_page = read_route(built, problem.url)
+    assert 'data-pagefind-filter="Discipline">mathematics' in problem_page
+    assert 'data-pagefind-filter="Discipline">computer science' in problem_page
+    assert built['report']['problems'] == 8
+
+
 def test_site_build_has_all_records_and_local_search(built):
     report, out = built["report"], built["out"]
     assert report["problems"] == 8

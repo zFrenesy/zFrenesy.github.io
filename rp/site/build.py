@@ -27,6 +27,7 @@ from rp.site.model import Contribution, Problem, load_model, slugify
 from rp.site.references import resolve_references
 from rp.site.checks import validate_site
 from rp.site.contribute import contribute_context, research_prompt
+from rp.site.rankings import load_economics_rankings, load_economics_jel_labels, catalogue_rank, catalogue_sort_key
 
 ROOT = Path(__file__).resolve().parents[2]
 PAGE_SIZE = 30
@@ -128,6 +129,9 @@ class Builder:
         LOG.info('Loading research records and ledger')
         self.model = load_model(self.work)
         self.catalog = default_catalog()
+        self.economics_rankings = load_economics_rankings()
+        self.jel_labels = load_economics_jel_labels()
+        self.cross_listings = json.loads((ROOT / 'site/catalogues/cross-listings.json').read_text())
         self.disciplines = [{**dict(v), 'id': k, 'description': v.get('disclaimer') or 'Open problems, research attempts and community review.', 'url': f'/{k}/'}
                             for k, v in self.catalog.disciplines.items() if k in self.catalog.platform['site']['discipline_sections']]
         self.platform_repo = 'we-solve-staging/we-solve-staging.github.io' if staging else 'we-solve/we-solve.github.io'
@@ -138,7 +142,8 @@ class Builder:
                          staging=staging, disciplines=self.disciplines,
                          comments=json.loads((ROOT / 'site/comments.json').read_text()).get(self.research_repo))
         self.env = Environment(loader=FileSystemLoader(ROOT / 'site/templates'), autoescape=select_autoescape(['html', 'xml']))
-        self.env.globals.update(url=self.url)
+        self.env.globals.update(url=self.url, economics_rank=lambda p: catalogue_rank(p, self.economics_rankings),
+                                jel_name=lambda code: self.jel_labels.get(code, ''), browse_disciplines=self.browse_disciplines)
         self.refs, self.diagnostics, self.packages = {}, [], []
         self.rendered = {}
         self.routes = set()
@@ -163,7 +168,32 @@ class Builder:
                 self.login_people[person['login']].append(person)
         self.env.globals.update(person_url=self.person_url, model_url=self.model_url)
         for discipline in self.disciplines:
-            discipline['count'] = sum(discipline['id'] in p.disciplines for p in self.model.problems.values())
+            discipline['count'] = sum(discipline['id'] in self.browse_disciplines(p) for p in self.model.problems.values())
+
+    def browse_disciplines(self, problem):
+        """Catalogue cross-listing changes discovery, never canonical research records."""
+        return list(dict.fromkeys([*problem.disciplines, *(discipline for discipline, sources in self.cross_listings.items()
+                                                        if problem.source[0] in sources)]))
+
+    @staticmethod
+    def jel_codes(problem):
+        return [c['code'] for c in problem.record['classifications'] if c['scheme'] == 'jel']
+
+    def jel_groups(self, problems):
+        codes = sorted({code[:n] for p in problems for code in self.jel_codes(p) for n in range(1, len(code) + 1)})
+        return [dict(code=code, name=self.jel_labels.get(code, ''), url=f'/economics/jel/{code}/',
+                     count=sum(any(c.startswith(code) for c in self.jel_codes(p)) for p in problems)) for code in codes]
+
+    def economics_context(self, problems, key):
+        """Small local metadata index, fetched only when catalogue search is used."""
+        path = f'/api/v1/catalogues/{key}.json'
+        rows = [dict(alias=p.alias, title=p.record['title'], url=p.url,
+                     jel=[dict(code=code, name=self.jel_labels.get(code, '')) for code in self.jel_codes(p)],
+                     search_terms=' '.join(self.jel_labels.get(code[:n], '') for code in self.jel_codes(p) for n in range(1, len(code) + 1)),
+                     rank=catalogue_rank(p, self.economics_rankings), status=p.status_label,
+                     llm_status=p.llm_status, attempts=len(p.attempts)) for p in problems]
+        self.write(path, _json(dict(problems=rows)))
+        return dict(catalogue_search=dict(index_url=path), jel_groups=self.jel_groups(problems))
 
     def url(self, path):
         if not path:
@@ -362,8 +392,7 @@ class Builder:
                           breadcrumbs=[dict(label=p.primary_discipline.replace('-', ' ').title(), url='/'+p.primary_discipline+'/'),
                                        dict(label=p.source[1], url='/'+p.primary_discipline+'/sources/'+p.source[0]+'/'), dict(label=p.alias,url='')],
                           pagination=dict(previous=route(n-1) if n>1 else None, next=route(n+1) if n<pages else None, page=n,pages=pages,total=len(contributions)),
-                          catalogue_links=catalogue_links(p),
-                          history=[dict(label='Statement revision', value=p.record['statement_revision_id'])])
+                          catalogue_links=catalogue_links(p))
             if p.reviews:
                 self.listing(p.url + 'reviews/', 'Reviews of ' + p.alias, contributions=p.reviews)
             self.redirect('/p/' + p.hex + '/', p.url)
@@ -413,7 +442,8 @@ class Builder:
             self.write('/api/v1/contributions/' + c.alias + '/' + c.revision_label + '.json', _json({'record': c.record,'alias': c.alias,'revision': c.revision_label,'dates': c.dates}))
 
     def browse_pages(self):
-        problems = sorted(self.model.problems.values(), key=lambda p:p.number_key())
+        problems = sorted(self.model.problems.values(), key=lambda p:(p.collection, catalogue_sort_key(p, self.economics_rankings)
+                                                                     if p.collection == 'economics' else p.number_key()))
         contributions = sorted(self.model.contributions.values(), key=lambda c:(c.sort_date,c.alias), reverse=True)
         stats = dict(problems=len(problems), contributions=len(contributions), people=len(self.model.people), models=len(self.models))
         self.page('/', 'home', 'Open problems. Shared research.', stats=stats,
@@ -423,20 +453,33 @@ class Builder:
         self.listing('/contributions/', 'All contributions', contributions=contributions)
         for discipline in self.disciplines:
             slug = discipline['id']
-            selected = [p for p in problems if slug in p.disciplines]
+            selected = [p for p in problems if slug in self.browse_disciplines(p)]
             catalogue = [p for p in selected if p.record['kind'] in {'catalogued','literature'}]
             proposed = [p for p in selected if p.record['kind'] in {'proposed','derived'}]
             groups = [dict(title='Problem catalogue',url=f'/{slug}/problems/',count=len(catalogue)),dict(title='Proposed questions and subproblems',url=f'/{slug}/proposed/',count=len(proposed))]
             groups += [dict(title=source[1],url=f'/{slug}/sources/{source[0]}/',count=sum(p.source==source for p in selected)) for source in sorted({p.source for p in selected})]
             groups += [dict(title=topic.replace('-', ' ').title(),url=f'/{slug}/topics/{self.topic_slugs[topic]}/',count=sum(topic in p.record.get('topics',[]) for p in selected)) for topic in sorted({t for p in selected for t in p.record.get('topics',[])})]
-            self.listing(f'/{slug}/',discipline['name'],problems=selected,groups=groups,intro=discipline['description'])
-            self.listing(f'/{slug}/problems/',discipline['name']+' catalogue',problems=catalogue)
+            economics = self.economics_context(selected, 'economics') if slug == 'economics' else {}
+            self.listing(f'/{slug}/',discipline['name'],problems=selected,groups=groups,intro=discipline['description'], **economics)
+            self.listing(f'/{slug}/problems/',discipline['name']+' catalogue',problems=catalogue,
+                         **(self.economics_context(catalogue, 'economics-problems') if slug == 'economics' else {}))
             self.listing(f'/{slug}/proposed/','Proposed '+discipline['name'].lower()+' questions',problems=proposed)
             for source in sorted({p.source for p in selected}):
-                self.listing(f'/{slug}/sources/{source[0]}/',source[1],problems=[p for p in selected if p.source==source])
+                source_problems = [p for p in selected if p.source == source]
+                self.listing(f'/{slug}/sources/{source[0]}/',source[1],problems=source_problems,
+                             **(self.economics_context(source_problems, 'economics-' + source[0]) if slug == 'economics' else {}))
+            if slug == 'economics':
+                for group in economics['jel_groups']:
+                    code = group['code']
+                    matching = [p for p in selected if any(c.startswith(code) for c in self.jel_codes(p))]
+                    self.listing(group['url'], 'JEL ' + code + (' — ' + group['name'] if group['name'] else ''), problems=matching,
+                                 catalogue_search=dict(index_url=economics['catalogue_search']['index_url'], jel_code=code),
+                                 jel_groups=[g for g in economics['jel_groups'] if g['code'].startswith(code) and g['code'] != code],
+                                 breadcrumbs=[dict(label='Economics', url='/economics/'), dict(label='JEL ' + code, url='')])
             for topic in sorted({t for p in selected for t in p.record.get('topics', [])}):
                 self.listing(f'/{slug}/topics/{self.topic_slugs[topic]}/', topic, problems=[p for p in selected if topic in p.record.get('topics',[])])
-            self.write(f'/api/v1/facets/{slug}.json', _json([dict(alias=p.alias,title=p.record['title'],source=p.source[0],source_status=(p.source_status or {}).get('normalised_status','unknown'),kind=p.record['kind'],topics=p.record.get('topics',[]),attempts=len(p.attempts),activity=p.last_activity) for p in selected]))
+            self.write(f'/api/v1/facets/{slug}.json', _json([dict(alias=p.alias,title=p.record['title'],source=p.source[0],source_status=(p.source_status or {}).get('normalised_status','unknown'),kind=p.record['kind'],topics=p.record.get('topics',[]),attempts=len(p.attempts),activity=p.last_activity,
+                                                               disciplines=self.browse_disciplines(p), classifications=p.record['classifications'], rank=catalogue_rank(p, self.economics_rankings)) for p in selected]))
         people = sorted(self.model.people.values(), key=lambda p:(p['display_name'],p['key']))
         self.page('/people/', 'content', 'People',body_html=Markup('<ul>' + ''.join(f'<li><a href="{self.url("/people/"+p["key"]+"/")}">{html.escape(p["display_name"])}</a></li>' for p in people) + '</ul>'))
         for person in people:
@@ -500,7 +543,7 @@ class Builder:
         self.contribute_pages()
         pages = {
             'about': ('About we-solve', 'we-solve is an open workspace and archive of research attempts, many generated or assisted by LLMs. LLM output can contain invalid proofs, invented references and false claims. Automated screening does not establish correctness, novelty or validity. Independent scrutiny, reproduction and peer review remain essential. Useful work should be developed into papers with proper credit and citation.'),
-            'policies/status': ('Status and evidence', 'Source status, author claim, automated screening, community review, formal checking, publication and lifecycle are separate axes. Claims here do not change the status at a source catalogue. Imported records have not passed platform screening. A full-solution claim is unverified unless independent evidence says otherwise.'),
+            'policies/status': ('Status and evidence', 'Source status, author claim, automated screening, community review, formal checking, publication and lifecycle are separate axes. When the source status is Solved, the displayed LLM status is also Solved and labelled from source status; this does not assert that an LLM solved the problem. Otherwise the LLM status summarises unverified contribution claims. An LLM solution claim never changes the source status. Imported records have not passed platform screening. A full-solution claim is unverified unless independent evidence says otherwise.'),
             'policies/review': ('Review and screening', 'Reviews identify exact revisions and checked scope. Automated screening checks form, honesty and scope; it does not prove correctness. Screening is disabled during staging. Legacy labels and review history are preserved as historical evidence, including removed records.'),
             'policies/attribution': ('LLM attribution and provenance', 'Submitters, human researchers, reviewers, issue authors, labellers and LLMs have distinct roles. Unknown versions and provenance are displayed as unknown. A submission or repository folder is not proof of scientific authorship.'),
             'policies/community': ('Community guidelines', 'Be precise, constructive and respectful. Critique arguments with evidence. Give credit, disclose conflicts, and do not post private information, harassment or misleading claims.'),

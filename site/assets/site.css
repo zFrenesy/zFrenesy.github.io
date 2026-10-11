@@ -194,3 +194,16 @@ details > summary { font-weight: 550; }
   .site-header, .site-footer, .staging-note, .theme-toggle, .contribute, .collapse-toggle, .copy-button { display: none !important; }
   .collapsible.is-collapsed { max-height: none; -webkit-mask-image: none; mask-image: none; }
 }
+
+.catalogue-search { margin-block: 1.5rem; }
+.catalogue-search label { display: block; margin-bottom: .35rem; font-weight: 600; }
+.catalogue-search-controls { display: flex; gap: .6rem; }
+.catalogue-search-controls input { flex: 1; width: 100%; min-width: 0; min-height: 42px; padding: .45rem .7rem; }
+.catalogue-search-controls button { flex-shrink: 0; }
+.catalogue-search [role="status"] { margin-top: .5rem; }
+.catalogue-search .row-meta { overflow-wrap: anywhere; }
+.catalogue-search .pagination { flex-wrap: wrap; gap: .5rem; }
+.catalogue-search button:disabled { opacity: .5; cursor: default; }
+.jel-browse { margin-block: 1rem 1.5rem; }
+.jel-browse ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: .4rem 1.5rem; list-style: none; padding: 0; margin-top: .8rem; }
+.jel-browse li { overflow-wrap: anywhere; }
