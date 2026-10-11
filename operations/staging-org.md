@@ -1,8 +1,14 @@
 # Staging organisation checklist (milestone 1)
 
-For the owner. Claude Code does not create organisations, Apps, secrets, rulesets or billing settings (CLAUDE.md). Apply these steps by hand, then verify them with the read-only checker in step 9. This covers only what milestone 1 needs: Apps, secrets and rulesets come with milestone 4 (`operations/github-settings.md`).
+Who does what (owner decision 2026-10-11, see CLAUDE.md):
 
-Time needed: about 30 minutes. Cost: none (GitHub Free).
+- **Owner (done):** created the `we-solve-staging` organisation and signed in with `gh auth login`.
+- **Claude Code:** applies steps 2–7 with `gh`, showing each command before running it, then runs the verifier (step 9) itself. This is deferred until milestone 2 first needs the staging org.
+- **Owner only, on request:** organisation-wide settings that the API does not expose, GitHub Apps, secrets and API keys, billing and spend limits.
+
+The steps below describe the settings in the web UI. That makes each one easy to check by hand, and some organisation settings, such as the 2FA requirement, may only be changeable there. This covers only what milestone 1 needs: Apps, secrets and rulesets come with milestone 4 (`operations/github-settings.md`).
+
+Cost: none (GitHub Free).
 
 ## 1. Create the organisation
 
@@ -83,15 +89,13 @@ In **we-solve-staging.github.io → Settings → Pages**, set *Source* to **GitH
 
 ## 8. Token for verification
 
-Create a **classic** personal access token that expires within 7 days, with scopes `read:org` and `repo`. A fine-grained token also works if it has organisation *Administration: read* and repository *Administration: read*, *Metadata: read* and *Environments: read*. Owner-level visibility is needed to see the 2FA requirement.
-
-The token is only for the next step. Delete it afterwards.
+The verifier uses the owner's `gh` login (`gh auth token`). Reading some organisation settings, such as the 2FA requirement, may need the `admin:org` scope. If a check fails as "not present in the API response", Claude Code asks the owner to run `gh auth refresh -s admin:org` and does not change scopes itself.
 
 ## 9. Verify
 
 ```sh
 cd "/path/to/we-solve"
-GITHUB_TOKEN=<token> ~/.venvs/we-solve/bin/python -m rp.ops.verify_settings --org we-solve-staging
+GITHUB_TOKEN="$(gh auth token)" ~/.venvs/we-solve/bin/python -m rp.ops.verify_settings --org we-solve-staging
 ```
 
 Every line must say `PASS`. The tool sends only GET requests. A `FAIL` saying a field is "not present in the API response" usually means the token cannot see that setting. It never counts as a pass.

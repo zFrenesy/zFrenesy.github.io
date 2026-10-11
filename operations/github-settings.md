@@ -1,6 +1,12 @@
 # GitHub settings: full target configuration
 
-For the owner, who applies all settings. This is the whole target (spec §7, §21) grouped by the milestone that needs each part. Apply only the milestones that have been signed off. Milestone 1 items are in `operations/staging-org.md`, and `operations/expected-settings.yaml` lists what the verifier checks.
+This is the whole target (spec §7, §21), grouped by the milestone that needs each part.
+
+**Who applies it** (owner decision 2026-10-11, CLAUDE.md):
+
+- **In `we-solve-staging`:** Claude Code applies repositories, branches, environments, Pages, Actions policies, security settings and rulesets with `gh`, showing commands first.
+- **Always the owner, or with the owner's explicit approval:** Apps, secrets and API keys, billing and spend limits.
+- **In the production org `we-solve`:** nothing is changed without asking. Apply only the milestones that have been signed off. Milestone 1 items are in `operations/staging-org.md`, and `operations/expected-settings.yaml` lists what the verifier checks.
 
 ## Milestone 1 (staging now; production at cutover)
 

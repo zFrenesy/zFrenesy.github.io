@@ -10,7 +10,7 @@ Status: Accepted, 2026-10-11 (confirmed by the owner)
 | Repositories | `we-solve/we-solve.github.io` (platform and website), `we-solve/research` | `platform.yaml` |
 | Site | `https://we-solve.github.io/`, with discipline sections `/mathematics/`, `/economics/`, `/computer-science/` on the same site | `platform.yaml` |
 | Computer Science | `active` at launch, alias prefix `CS`, ACM CCS 2012 classification | `rp/policies/disciplines/computer-science.yaml` |
-| Staging organisation | `we-solve-staging` (the owner creates it) | `platform.yaml`, `operations/staging-org.md` |
+| Staging organisation | `we-solve-staging`, created by the owner. Claude Code configures it with the owner's `gh` login (commands shown first) when milestone 2 needs it. Apps, secrets and API keys, and billing or spend limits still need the owner's approval. Production and the legacy repository are never touched without asking. This overrides spec §0 for staging. | `platform.yaml`, `operations/staging-org.md`, CLAUDE.md |
 | Licences for new work | CC BY 4.0 for manuscripts, Apache-2.0 for software; inherited terms kept | `platform.yaml` |
 | AI budget | USD 100/month cap, USD 3/day newcomer pool (enforced from milestone 4) | `platform.yaml` |
 | Screening | Disabled (`screening_enabled: false`) until milestone 4 sign-off | `platform.yaml` |
