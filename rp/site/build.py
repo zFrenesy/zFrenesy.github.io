@@ -22,7 +22,7 @@ from rp import strict_yaml
 from rp.catalog import default_catalog
 from rp.publication.citation import CitationData, bibtex, cff, csl_json
 from rp.publication.packages import build_package
-from rp.render.tex import Prepared, Rendered, TexRenderer, prepare, renderer_digest, node_version, report as render_report
+from rp.render.tex import Prepared, Rendered, TexRenderer, contains_math, prepare, renderer_digest, node_version, report as render_report
 from rp.site.model import Contribution, Problem, load_model, slugify
 from rp.site.references import resolve_references
 from rp.site.checks import validate_site
@@ -91,8 +91,10 @@ def _slug_map(values):
 
 class Builder:
     def __init__(self, work: Path, out: Path, *, base_url: str, cache_dir: Path | None = None,
-                 packages_dir: Path | None = None, staging: bool = True, search: bool = True):
+                 packages_dir: Path | None = None, staging: bool = True, search: bool = True, link_status: Path | None = None):
         self.work, self.out = Path(work).resolve(), Path(out).resolve()
+        # Display-only availability from the weekly link check (§10); it never changes a label.
+        self.link_status = json.loads(Path(link_status).read_text(encoding='utf-8'))['links'] if link_status else {}
         if self.out == self.work or self.work.is_relative_to(self.out) or self.out.is_relative_to(self.work / 'research') or self.out.is_relative_to(self.work / 'ledger'):
             raise ValueError('output must be separate from research inputs')
         parsed = urlsplit(base_url)
@@ -209,7 +211,8 @@ class Builder:
                 kind = {'top': 'top_statement', 'economics': 'economics_statement'}.get(p.collection)
                 documents[p.id] = prepare(kind, text) if kind else Prepared(text)
             else:
-                p.rendered = Rendered(plain_document(text))
+                body = plain_document(text)
+                p.rendered = Rendered(body, has_math=contains_math(body))
         for c in self.model.contributions.values():
             if c.record['rights']['redistribution'] != 'permitted':
                 c.rendered = Rendered('<p>This record is available as metadata. Its source is not reproduced under the recorded redistribution terms.</p>')
@@ -225,7 +228,7 @@ class Builder:
                 body = '\n'.join(plain_document(t) for t in texts)
                 if c.is_review and c.legacy:
                     body = '<p>' + html.escape(c.legacy.get('note') or 'The complete historical review record is available in the source files.') + '</p>'
-                c.rendered = Rendered(body)
+                c.rendered = Rendered(body, has_math=contains_math(body))
         # Bounded batches keep memory and subprocess timeouts predictable on large corpora.
         entries = list(documents.items())
         for start in range(0, len(entries), 100):
@@ -336,6 +339,7 @@ class Builder:
                           has_math=p.rendered.has_math or any(c.rendered and c.rendered.has_math for c in shown),
                           contributions=contributions[(n-1)*PAGE_SIZE:n*PAGE_SIZE], reviews=p.reviews[:PAGE_SIZE],
                           statement_source_url=source_path, license_label=p.record['rights']['licence'], related=related,
+                          parent=self.model.problems.get(p.record.get('derivation', {}).get('parent_problem_id', '')),
                           breadcrumbs=[dict(label=p.primary_discipline.replace('-', ' ').title(), url='/'+p.primary_discipline+'/'),
                                        dict(label=p.source[1], url='/'+p.primary_discipline+'/sources/'+p.source[0]+'/'), dict(label=p.alias,url='')],
                           pagination=dict(previous=route(n-1) if n>1 else None, next=route(n+1) if n<pages else None, page=n,pages=pages,total=len(contributions)),
@@ -379,7 +383,7 @@ class Builder:
             context = dict(contribution=c, problem=c.problem, rendered_html=Markup(manuscript), contents=contents,
                            scope_html=Markup(c.rendered.scope_html or ''), has_math=c.rendered.has_math,
                            source_files=sources, citation=citation, lineage=lineage, history=history,
-                           reviews=targets[c.record['revision_id']][:PAGE_SIZE],
+                           reviews=targets[c.record['revision_id']][:PAGE_SIZE], link_status=self.link_status,
                            axes={'screening': 'Not screened', 'community_review': str(len(targets[c.record['revision_id']])) + ' reviews of this exact revision',
                                  'formal_check': 'Not checked', 'publication': 'Staging preview; release pending', 'lifecycle': 'Present in research source'},
                            source_url='https://github.com/mehmetmars7/Erdosproblems-llm-hunter/blob/b1f633121074e16579fa7fd05314e5f504d29bae/' + quote(c.legacy['source_path']) if c.legacy.get('source_path') else '')

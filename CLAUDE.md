@@ -31,6 +31,8 @@ Python 3.12, JSON Schema 2020-12, Jinja2, Pandoc (restricted profile), MathJax, 
 - Build site locally (milestone 2): `python -m rp.site build --out _site`
 - Serve: `python -m http.server -d _site 8000`
 - Contributor tools (run in a research checkout): `rp start <HANDLE>`, `rp new attempt <HANDLE>` / `rp new review <HANDLE>` / `rp new problem [--parent <HANDLE>]`, `rp check`, `rp submit [--dry-run]`
+- Intake dry run (read-only, your gh login): `rp intake dry-run --repo we-solve-staging/research --issue N` (or `--pr N`), run in a research checkout
+- Link checks: `rp links verify [--base --head]` (pins via GitHub and Hugging Face APIs), `rp links sweep --out link-status.json`
 - Render the research-repository kit: `python -m rp.contribute.kit --out <research-checkout> --research <org>/research --platform <org>/<org>.github.io --ref <platform-sha> --site <url>/` (see `operations/research-kit.md`)
 
 ## Layout

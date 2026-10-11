@@ -14,7 +14,7 @@
 <li class="row">
   <a class="identifier" href="{{ url(item.revision_url) }}">{{ item.alias }}</a>
   <a class="row-title" href="{{ url(item.revision_url) }}">{{ item.record.title }}</a>
-  <span class="row-meta">{{ 'Review' if item.is_review else item.claim_label }}{% if item.is_review and item.legacy.get('raw_label') %} ({{ item.legacy.raw_label }}){% endif %} · {{ mode_label(item.mode) }}{% if item.model_names %} · {{ item.model_names|join(', ') }}{% endif %}{% if item.sort_date %} · <time datetime="{{ item.sort_date }}">{{ item.sort_date }}</time>{% endif %}{% if show_problem and item.problem %} · <a href="{{ url(item.problem.url) }}">{{ item.problem.alias }}</a>{% endif %}</span>
+  <span class="row-meta">{% if item.record.get('review') %}{{ 'Author response' if item.record.type == 'author_response' else 'Review' }}: {{ item.record.review.finding|replace('_', ' ') }}{% else %}{{ 'Review' if item.is_review else item.claim_label }}{% endif %}{% if item.is_review and item.legacy.get('raw_label') %} ({{ item.legacy.raw_label }}){% endif %} · {{ mode_label(item.mode) }}{% if item.model_names %} · {{ item.model_names|join(', ') }}{% endif %}{% if item.sort_date %} · <time datetime="{{ item.sort_date }}">{{ item.sort_date }}</time>{% endif %}{% if show_problem and item.problem %} · <a href="{{ url(item.problem.url) }}">{{ item.problem.alias }}</a>{% endif %}{% if item.review_note %} · {{ badge(item.review_note, 'warning') }}{% endif %}</span>
 </li>
 {% endmacro %}
 
@@ -29,7 +29,7 @@
 {% macro attempt_inline(item) %}
 <article class="attempt" id="attempt-{{ item.alias }}">
   <header>
-    <p class="row-meta"><a class="identifier" href="{{ url(item.revision_url) }}">{{ item.alias }}</a> · {{ item.claim_label }} · {{ mode_label(item.mode) }}{% if item.model_names %} · {{ item.model_names|join(', ') }}{% endif %}{% if item.sort_date %} · <time datetime="{{ item.sort_date }}">{{ item.sort_date }}</time>{% endif %}</p>
+    <p class="row-meta"><a class="identifier" href="{{ url(item.revision_url) }}">{{ item.alias }}</a> · {{ item.claim_label }} · {{ mode_label(item.mode) }}{% if item.model_names %} · {{ item.model_names|join(', ') }}{% endif %}{% if item.sort_date %} · <time datetime="{{ item.sort_date }}">{{ item.sort_date }}</time>{% endif %}{% if item.review_note %} · {{ badge(item.review_note, 'warning') }}{% endif %}</p>
     <h3><a href="{{ url(item.revision_url) }}">{{ item.record.title }}</a></h3>
   </header>
   <div class="collapsible" data-collapsible data-more="View more" data-less="View less">

@@ -101,6 +101,8 @@ input { background: var(--bg); border: 1px solid var(--line); border-radius: 6px
 .status-item strong { margin-left: .25rem; }
 .status-line a { color: var(--muted); font-size: .85rem; }
 .notice, .verification-banner { padding: .7rem 1rem; border-left: 3px solid var(--warn); background: var(--warn-bg); font-size: .9rem; }
+.badge { display: inline-block; padding: 0 .4rem; border-radius: 4px; font-size: .78rem; font-weight: 600; line-height: 1.5; }
+.badge-warning { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn); }
 
 .intro { padding-top: 2.5rem; max-width: 760px; }
 .search-form { display: flex; gap: .5rem; margin: 1.3rem 0; }

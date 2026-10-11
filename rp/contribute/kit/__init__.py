@@ -29,11 +29,13 @@ FILES = {
     ".github/PULL_REQUEST_TEMPLATE.md": "pull-request-template.md",
     ".github/workflows/check.yml": "check.yml",
 }
+# Rendered only once the owner has approved the intake App (operations/intake-app.md).
+INTAKE_FILES = {".github/workflows/intake.yml": "intake-caller.yml"}
 _REPO = re.compile(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+")
 _PLACEHOLDER = re.compile(r"\{\{[A-Z_]+\}\}")
 
 
-def render_kit(*, research: str, platform: str, ref: str, site_url: str) -> dict[str, bytes]:
+def render_kit(*, research: str, platform: str, ref: str, site_url: str, intake_app_id: int | None = None) -> dict[str, bytes]:
     if not (_REPO.fullmatch(research) and _REPO.fullmatch(platform)):
         raise ValueError("repositories must be OWNER/NAME")
     if not re.fullmatch(r"[0-9a-f]{40}", ref):
@@ -41,8 +43,14 @@ def render_kit(*, research: str, platform: str, ref: str, site_url: str) -> dict
     if not re.fullmatch(r"https://[A-Za-z0-9.-]+/", site_url):
         raise ValueError("the site URL must be https://host/ with a trailing slash")
     values = {"RESEARCH_REPO": research, "PLATFORM_REPO": platform, "PLATFORM_REF": ref, "SITE_URL": site_url}
+    files = dict(FILES)
+    if intake_app_id is not None:
+        if intake_app_id <= 0:
+            raise ValueError("the intake App ID must be a positive number")
+        values["INTAKE_APP_ID"] = str(intake_app_id)
+        files.update(INTAKE_FILES)
     rendered = {}
-    for out, name in FILES.items():
+    for out, name in files.items():
         text = (TEMPLATES / name).read_text(encoding="utf-8")
         for key, value in values.items():
             text = text.replace("{{" + key + "}}", value)

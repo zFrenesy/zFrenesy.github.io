@@ -10,6 +10,7 @@ and its relationship to existing problems. Contributor files are never executed.
 
 from __future__ import annotations
 
+import os
 import re
 import stat
 import subprocess
@@ -17,26 +18,24 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
 
 from rp import strict_yaml
 from rp.catalog import Catalog, default_catalog
-from rp.fingerprint import ManifestError, manifest_from_directory
+from rp.fingerprint import ManifestError, manifest_from_blobs
 from rp.identity.ids import is_id
 from rp.identity.paths import InvalidPath, check_relative_path, contribution_dir, problem_dir
 from rp.strict_yaml import StrictYamlError
+from rp.validation.problems import admission_issues, similar_statements
+from rp.validation.links import TEXT_SUFFIXES, check_external_links
 from rp.validation.records import publication_issues, validate_record
 
-__all__ = ["CheckReport", "LIMITS", "changed_paths", "check_changes"]
+__all__ = ["CheckReport", "FolderFiles", "LIMITS", "changed_paths", "check_changes", "check_folder", "folder_key", "read_folder"]
+
+FolderFiles = dict[str, tuple[bytes, str]]  # path inside the folder -> (content, git mode)
+SYMLINK = "120000"
 
 LIMITS = {"files": 200, "file_bytes": 5 * 1024 * 1024, "total_bytes": 25 * 1024 * 1024}
 ALLOWED_SUFFIXES = {".tex", ".bib", ".md", ".pdf", ".png", ".jpg", ".jpeg", ".csv", ".json", ".txt", ".yaml"}
-LINK_HOSTS = {
-    "github": {"github.com"},
-    "hugging_face": {"huggingface.co"},
-    "zenodo": {"zenodo.org", "doi.org"},
-    "software_heritage": {"archive.softwareheritage.org"},
-}
 _FOLDER = re.compile(r"problems/([0-9a-f]{2})/(prb_[0-9a-f]{32})(?:/(contributions|reviews)/(con_[0-9a-f]{32}))?")
 
 
@@ -88,7 +87,7 @@ def changed_paths(root: Path, base: str | None, head: str | None) -> list[tuple[
     return sorted((s, p) for p, s in seen.items())
 
 
-def _folder_key(path: str) -> tuple[str, str] | None:
+def folder_key(path: str) -> tuple[str, str] | None:
     """The new folder a path belongs to: ('contribution', folder) or ('problem', folder)."""
     for end in range(len(path.split("/")), 2, -1):
         prefix = "/".join(path.split("/")[:end])
@@ -108,7 +107,7 @@ def check_changes(root: Path, changes: list[tuple[str, str]], catalog: Catalog |
         except InvalidPath as exc:
             report.errors.append(f"{path}: {exc}")
             continue
-        key = _folder_key(path)
+        key = folder_key(path)
         if status != "A":
             report.errors.append(f"{path}: only new files may be added; existing files cannot be modified, renamed or deleted (status {status})")
         elif key is None:
@@ -124,33 +123,53 @@ def check_changes(root: Path, changes: list[tuple[str, str]], catalog: Catalog |
             if parent in problem_folders:
                 report.errors.append(f"{folder}: a contribution and a new problem cannot be submitted together")
                 continue
-            _check_contribution(root, folder, paths, catalog, report)
+            _check_contribution(root, folder, read_folder(root, folder), catalog, report)
         else:
-            _check_problem(root, folder, paths, catalog, report)
+            _check_problem(root, folder, read_folder(root, folder), catalog, report)
         report.folders.append(folder)
     if len(folders) > 1:
         report.warnings.append("several new folders in one change; one contribution per pull request is easier to review")
     return report
 
 
-def _limits(root: Path, folder: str, report: CheckReport) -> None:
-    files = [p for p in (root / folder).rglob("*") if p.is_file() or p.is_symlink()]
+def read_folder(root: Path, folder: str) -> FolderFiles:
+    """Every entry under a folder as (content, git mode). Symlinks are recorded, never followed."""
+    found: FolderFiles = {}
+    base = root / folder
+    for current, dirnames, filenames in os.walk(base, followlinks=False):
+        for name in sorted(dirnames + filenames):
+            full = Path(current) / name
+            info = os.lstat(full)
+            rel = full.relative_to(base).as_posix()
+            if stat.S_ISLNK(info.st_mode):
+                found[rel] = (b"", SYMLINK)
+            elif stat.S_ISREG(info.st_mode):
+                found[rel] = (full.read_bytes(), "100755" if info.st_mode & 0o111 else "100644")
+            elif not stat.S_ISDIR(info.st_mode):
+                found[rel] = (b"", "special")
+    return found
+
+
+def _limits(folder: str, files: FolderFiles, report: CheckReport) -> None:
     if len(files) > LIMITS["files"]:
         report.errors.append(f"{folder}: {len(files)} files exceeds the limit of {LIMITS['files']}")
     total = 0
-    for path in files:
-        rel = path.relative_to(root).as_posix()
-        info = path.lstat()
-        if stat.S_ISLNK(info.st_mode):
+    for name, (content, mode) in sorted(files.items()):
+        rel = f"{folder}/{name}"
+        if mode == SYMLINK:
             report.errors.append(f"{rel}: symbolic links are not allowed")
             continue
-        if info.st_mode & 0o111:
+        if mode not in ("100644", "100755"):
+            report.errors.append(f"{rel}: only regular files are allowed")
+            continue
+        if mode == "100755":
             report.errors.append(f"{rel}: executable files are not allowed")
-        if path.suffix.lower() not in ALLOWED_SUFFIXES:
-            report.errors.append(f"{rel}: file type {path.suffix or '(none)'} is not accepted; link code, notebooks and data instead")
-        if info.st_size > LIMITS["file_bytes"]:
-            report.errors.append(f"{rel}: {info.st_size} bytes exceeds the 5 MiB per-file limit")
-        total += info.st_size
+        suffix = Path(name).suffix.lower()
+        if suffix not in ALLOWED_SUFFIXES:
+            report.errors.append(f"{rel}: file type {suffix or '(none)'} is not accepted; link code, notebooks and data instead")
+        if len(content) > LIMITS["file_bytes"]:
+            report.errors.append(f"{rel}: {len(content)} bytes exceeds the 5 MiB per-file limit")
+        total += len(content)
     if total > LIMITS["total_bytes"]:
         report.errors.append(f"{folder}: {total} bytes exceeds the 25 MiB limit")
 
@@ -166,29 +185,41 @@ def _todo(value: Any, where: str, report: CheckReport) -> None:
             _todo(v, f"{where}[{i}]", report)
 
 
-def _links(record: dict, folder: str, catalog: Catalog, report: CheckReport) -> None:
-    hosts = set().union(*(LINK_HOSTS.get(h, set()) for h in catalog.platform["allowed_external_hosts"]))
-    for index, artifact in enumerate(record.get("artifacts", [])):
-        if artifact.get("location") != "external_pinned":
-            continue
-        host = (urlsplit(artifact["external"]["url"]).hostname or "").lower()
-        if host not in hosts:
-            report.errors.append(f"{folder}: artifact {index} links to {host or 'an invalid URL'}; allowed hosts are {', '.join(sorted(hosts))}")
+def _links(record: dict, folder: str, files: FolderFiles, catalog: Catalog, report: CheckReport) -> None:
+    texts = {name: content for name, (content, mode) in files.items()
+             if mode in ("100644", "100755") and Path(name).suffix.lower() in TEXT_SUFFIXES and len(content) <= LIMITS["file_bytes"]}
+    links = check_external_links(record, texts, catalog=catalog, where=folder)
+    report.errors.extend(str(issue) for issue in links.errors)
+    report.warnings.extend(str(issue) for issue in links.warnings)
 
 
-def _load(root: Path, path: str, report: CheckReport) -> dict | None:
+def _load(folder: str, name: str, files: FolderFiles, report: CheckReport) -> dict | None:
+    if name not in files or files[name][1] not in ("100644", "100755"):
+        report.errors.append(f"{folder}/{name}: missing")
+        return None
     try:
-        return strict_yaml.load((root / path).read_bytes())
-    except FileNotFoundError:
-        report.errors.append(f"{path}: missing")
+        return strict_yaml.load(files[name][0])
     except StrictYamlError as exc:
-        report.errors.append(f"{path}: {exc}")
+        report.errors.append(f"{folder}/{name}: {exc}")
     return None
 
 
-def _check_contribution(root: Path, folder: str, paths: list[str], catalog: Catalog, report: CheckReport) -> None:
-    _limits(root, folder, report)
-    record = _load(root, folder + "/contribution.yaml", report)
+def check_folder(root: Path, folder: str, files: FolderFiles, catalog: Catalog | None = None) -> CheckReport:
+    """Check one new folder given its exact files (used by intake before anything is written)."""
+    catalog = catalog or default_catalog()
+    report = CheckReport()
+    key = folder_key(folder + "/x")
+    if key is None or key[1] != folder:
+        report.errors.append(f"{folder}: not a contribution, review or problem folder")
+        return report
+    (_check_contribution if key[0] == "contribution" else _check_problem)(root, folder, files, catalog, report)
+    report.folders.append(folder)
+    return report
+
+
+def _check_contribution(root: Path, folder: str, files: FolderFiles, catalog: Catalog, report: CheckReport) -> None:
+    _limits(folder, files, report)
+    record = _load(folder, "contribution.yaml", files, report)
     if record is None:
         return
     _todo(record, folder + "/contribution.yaml", report)
@@ -203,6 +234,8 @@ def _check_contribution(root: Path, folder: str, paths: list[str], catalog: Cata
         report.errors.append(f"{folder}: must be {expected} (folder must match the record's home problem, type and ID)")
     if record["expected_predecessor"] is not None:
         report.errors.append(f"{folder}: a new contribution has no predecessor; revisions of existing contributions use the editor route")
+    if stray := sorted(n for n in files if n != "contribution.yaml" and not n.startswith("files/")):
+        report.errors.append(f"{folder}: unexpected files outside files/: {stray}")
     home = root / problem_dir(record["home_problem_id"]) / "problem.yaml"
     if not home.is_file():
         report.errors.append(f"{folder}: home problem {record['home_problem_id']} does not exist")
@@ -215,17 +248,18 @@ def _check_contribution(root: Path, folder: str, paths: list[str], catalog: Cata
             current = strict_yaml.load(problem_yaml.read_bytes())["statement_revision_id"]
             if target["statement_revision_id"] != current:
                 report.errors.append(f"{folder}: target statement revision {target['statement_revision_id']} is not the current one ({current})")
+    blobs = {n: v for n, v in files.items() if n.startswith("files/") and v[1] in ("100644", "100755")}
     try:
-        manifest_from_directory(root / folder, record["artifacts"])
+        manifest_from_blobs(blobs, record["artifacts"])
     except ManifestError as exc:
         report.errors.append(f"{folder}: {exc}")
-    _links(record, folder, catalog, report)
+    _links(record, folder, files, catalog, report)
     report.warnings.extend(f"{folder}: {issue.message}; the submitter confirms this before publication" for issue in publication_issues(record))
 
 
-def _check_problem(root: Path, folder: str, paths: list[str], catalog: Catalog, report: CheckReport) -> None:
-    _limits(root, folder, report)
-    record = _load(root, folder + "/problem.yaml", report)
+def _check_problem(root: Path, folder: str, files: FolderFiles, catalog: Catalog, report: CheckReport) -> None:
+    _limits(folder, files, report)
+    record = _load(folder, "problem.yaml", files, report)
     if record is None:
         return
     _todo(record, folder + "/problem.yaml", report)
@@ -236,8 +270,18 @@ def _check_problem(root: Path, folder: str, paths: list[str], catalog: Catalog, 
     if is_id(record.get("problem_id"), "problem") and folder != problem_dir(record["problem_id"]).as_posix():
         report.errors.append(f"{folder}: must be {problem_dir(record['problem_id']).as_posix()}")
     statement = record.get("statement_artifact", {}).get("path")
-    if statement and not (root / folder / statement).is_file():
+    if statement and statement not in files:
         report.errors.append(f"{folder}: statement file {statement} is missing")
-    extra = sorted(set(p.split("/", 3)[3] for p in paths) - {"problem.yaml", statement})
-    if extra:
+    if extra := sorted(set(files) - {"problem.yaml", statement}):
         report.errors.append(f"{folder}: unexpected files {extra}")
+    if any(i.startswith(f"{folder}/problem.yaml error") for i in report.errors):
+        return
+    text = files[statement][0].decode("utf-8", errors="replace") if statement in files else None
+    for severity, message in admission_issues(record, text, root=root, catalog=catalog):
+        (report.errors if severity == "error" else report.warnings).append(f"{folder}: {message}")
+    if text:
+        primary = next((d["discipline"] for d in record["disciplines"] if d["role"] == "primary"), None)
+        for match in similar_statements(text, primary, root, exclude=record["problem_id"]):
+            report.warnings.append(f"{folder}: similar to {match.path} ({match.title[:60]}, overlap {match.score:.2f}); "
+                                   "explain the difference or link it as variant_of / duplicate_of")
+    _links(record, folder, files, catalog, report)

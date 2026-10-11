@@ -7,6 +7,7 @@ never copies agent instruction files, hooks or scripts found in research folders
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 import subprocess
@@ -59,7 +60,7 @@ class Research:
     def here(cls, start: Path | None = None) -> Research:
         return cls(find_research(start))
 
-    @property
+    @functools.cached_property
     def index(self) -> dict[str, Any]:
         return json.loads((self.root / "browse" / "aliases.json").read_text(encoding="utf-8"))
 
@@ -163,6 +164,22 @@ class Research:
 
     def new_attempt(self, alias: str, identity: dict[str, Any]) -> Path:
         problem = self.problem(alias)
+        record = self.attempt_record(problem, identity)
+        folder = self.root / contribution_dir(problem["id"], record["contribution_id"], "attempt")
+        (folder / "files").mkdir(parents=True)
+        (folder / "contribution.yaml").write_text(
+            "# Fill in every TODO. Remove the model entry if no AI was used and set contribution_mode: human_only.\n"
+            "# Claim types: full_solution, full_disproof, partial_result, conditional_result, computational_evidence,\n"
+            "# literature_report, exploration. Model version stays \"unknown\" unless you know it exactly.\n"
+            + strict_yaml.dump(record), encoding="utf-8")
+        (folder / "files" / "attempt.md").write_text(
+            f"# TODO: title\n\nProblem: {problem['alias']} ({problem['record']['title']})\n\n"
+            "## Claim and scope\n\nTODO\n\n## Argument\n\nTODO (Markdown with $LaTeX$ maths)\n\n## What remains open\n\nTODO\n\n## References\n\nOnly references you have checked.\n",
+            encoding="utf-8")
+        return folder
+
+    def attempt_record(self, problem: dict[str, Any], identity: dict[str, Any]) -> dict[str, Any]:
+        """A new attempt record for ``problem`` (from ``self.problem``) with TODO placeholders."""
         cid, rid = new_id("contribution"), new_id("revision")
         submitter = self._person(identity, ["submission", "investigation", "writing_original_draft"])
         record = {
@@ -197,22 +214,23 @@ class Research:
             "rights": {"licence": "CC-BY-4.0", "redistribution": "permitted", "holders": [submitter["display_name"]]},
             "declarations": self._declarations(submitter["person_ref"]),
         }
-        folder = self.root / contribution_dir(problem["id"], cid, "attempt")
-        (folder / "files").mkdir(parents=True)
-        (folder / "contribution.yaml").write_text(
-            "# Fill in every TODO. Remove the model entry if no AI was used and set contribution_mode: human_only.\n"
-            "# Claim types: full_solution, full_disproof, partial_result, conditional_result, computational_evidence,\n"
-            "# literature_report, exploration. Model version stays \"unknown\" unless you know it exactly.\n"
-            + strict_yaml.dump(record), encoding="utf-8")
-        (folder / "files" / "attempt.md").write_text(
-            f"# TODO: title\n\nProblem: {problem['alias']} ({problem['record']['title']})\n\n"
-            "## Claim and scope\n\nTODO\n\n## Argument\n\nTODO (Markdown with $LaTeX$ maths)\n\n## What remains open\n\nTODO\n\n## References\n\nOnly references you have checked.\n",
-            encoding="utf-8")
-        return folder
+        return record
 
     def new_review(self, alias: str, identity: dict[str, Any]) -> Path:
         target = self.contribution(alias)
         home = self.problem(target["home"])
+        record = self.review_record(target, home, identity)
+        folder = self.root / contribution_dir(home["id"], record["contribution_id"], "review")
+        (folder / "files").mkdir(parents=True)
+        (folder / "contribution.yaml").write_text(
+            "# Findings: supports, error_found, gap_found, counterexample, known_result, reproduced, not_reproduced,\n"
+            "# reference_suggestion, comment. If an AI assisted, add a model_uses entry and set contribution_mode: human_ai.\n"
+            + strict_yaml.dump(record), encoding="utf-8")
+        (folder / "files" / "review.md").write_text(f"# Review of {target['alias']}\n\nTODO: what you checked, where, and what you found.\n", encoding="utf-8")
+        return folder
+
+    def review_record(self, target: dict[str, Any], home: dict[str, Any], identity: dict[str, Any]) -> dict[str, Any]:
+        """A new review of the exact current revision of ``target`` (from ``self.contribution``)."""
         cid, rid = new_id("contribution"), new_id("revision")
         submitter = self._person(identity, ["submission", "validation"])
         record = {
@@ -238,16 +256,19 @@ class Research:
                 "conflicts_of_interest": "None declared.",
             },
         }
-        folder = self.root / contribution_dir(home["id"], cid, "review")
-        (folder / "files").mkdir(parents=True)
-        (folder / "contribution.yaml").write_text(
-            "# Findings: supports, error_found, gap_found, counterexample, known_result, reproduced, not_reproduced,\n"
-            "# reference_suggestion, comment. If an AI assisted, add a model_uses entry and set contribution_mode: human_ai.\n"
-            + strict_yaml.dump(record), encoding="utf-8")
-        (folder / "files" / "review.md").write_text(f"# Review of {target['alias']}\n\nTODO: what you checked, where, and what you found.\n", encoding="utf-8")
-        return folder
+        return record
 
     def new_problem(self, parent: str | None, identity: dict[str, Any]) -> Path:
+        record = self.problem_record(self.problem(parent) if parent else None, identity)
+        folder = self.root / problem_dir(record["problem_id"])
+        folder.mkdir(parents=True)
+        (folder / "problem.yaml").write_text("# Fill in every TODO. Derived natures: restriction, special_case, step, reformulation, generalisation.\n"
+                                             + strict_yaml.dump(record), encoding="utf-8")
+        (folder / "statement.md").write_text("# TODO: title\n\nTODO: the precise statement, with every definition.\n", encoding="utf-8")
+        return folder
+
+    def problem_record(self, parent: dict[str, Any] | None, identity: dict[str, Any]) -> dict[str, Any]:
+        """A new proposed problem, or a derived one when ``parent`` (from ``self.problem``) is given."""
         pid, stm = new_id("problem"), new_id("statement_revision")
         submitter = self._person(identity, ["submission", "conceptualization"])
         record: dict[str, Any] = {
@@ -268,18 +289,14 @@ class Research:
             "model_uses": [],
         }
         if parent:
-            p = self.problem(parent)
+            p = parent
             record["relations"] = [{"type": "subproblem_of", "target_problem_id": p["id"], "primary": True}]
             record["derivation"] = {"parent_problem_id": p["id"], "nature": "special_case", "parent_status_unchanged": True}
             record["disciplines"] = list(p["record"]["disciplines"])
+            record["classifications"] = list(p["record"]["classifications"])
         else:
             record["proposal"] = {
                 "motivation": "TODO", "relation_to_known": "TODO", "elementary_checks": "TODO",
                 "literature_search": "TODO", "novelty_disclaimer_acknowledged": True,
             }
-        folder = self.root / problem_dir(pid)
-        folder.mkdir(parents=True)
-        (folder / "problem.yaml").write_text("# Fill in every TODO. Derived natures: restriction, special_case, step, reformulation, generalisation.\n"
-                                             + strict_yaml.dump(record), encoding="utf-8")
-        (folder / "statement.md").write_text("# TODO: title\n\nTODO: the precise statement, with every definition.\n", encoding="utf-8")
-        return folder
+        return record

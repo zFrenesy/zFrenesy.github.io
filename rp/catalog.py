@@ -11,7 +11,7 @@ from __future__ import annotations
 import functools
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Any
@@ -55,6 +55,7 @@ class Catalog:
     classifications: Mapping[str, Mapping[str, Any]]
     profiles: Mapping[tuple[str, int], Mapping[str, Any]]
     alias_policy: AliasPolicy
+    external_hosts: Mapping[str, Any] = field(default_factory=dict)
 
     @classmethod
     def load(cls, policies_dir: str | Path | Traversable | None = None, profiles_dir: str | Path | Traversable | None = None) -> Catalog:
@@ -64,6 +65,7 @@ class Catalog:
 
         platform = _load(policies / "platform.yaml", "platform", problems)
         namespaces = _load(policies / "alias-namespaces.yaml", "alias_namespaces", problems)
+        hosts = _load(policies / "external-hosts.yaml", "external_hosts", problems) if (policies / "external-hosts.yaml").is_file() else {}
 
         disciplines: dict[str, Mapping[str, Any]] = {}
         for entry in _yaml_files(policies / "disciplines"):
@@ -89,7 +91,7 @@ class Catalog:
                     problems.append(f"{entry.name}: file name must be {data['id']}.yaml")
                 profiles[(data["id"], data["version"])] = data
 
-        if platform is None or namespaces is None:
+        if platform is None or namespaces is None or hosts is None:
             raise CatalogError(problems)
 
         profile_ids = {pid for pid, _ in profiles}
@@ -106,6 +108,9 @@ class Catalog:
                 vocab = cls_config["vocabulary"]
                 if vocab is not None and (vocab not in classifications or classifications[vocab]["scheme"] != cls_config["scheme"]):
                     problems.append(f"{slug}: classification vocabulary {vocab!r} is missing or for another scheme")
+        for host in platform["allowed_external_hosts"]:
+            if hosts and host not in hosts["artifact_hosts"]:
+                problems.append(f"platform.yaml: allowed external host {host!r} has no entry in external-hosts.yaml")
         for section in platform["site"]["discipline_sections"]:
             config = disciplines.get(section)
             if config is None or config["status"] not in OPEN_DISCIPLINE_STATUSES:
@@ -135,7 +140,7 @@ class Catalog:
 
         if problems:
             raise CatalogError(problems)
-        return cls(platform, disciplines, classifications, profiles, alias_policy)
+        return cls(platform, disciplines, classifications, profiles, alias_policy, hosts)
 
     def classification_problem(self, scheme: str, code: str) -> str | None:
         """Return why ``code`` is not a valid code of ``scheme``, or None when it is."""

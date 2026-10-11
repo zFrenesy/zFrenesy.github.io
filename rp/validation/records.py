@@ -66,6 +66,7 @@ RECORD_TYPES = {
     "alias_namespaces": "alias-namespaces.schema.json",
     "platform": "platform.schema.json",
     "classification": "classification.schema.json",
+    "external_hosts": "external-hosts.schema.json",
 }
 FILENAME_TYPES = {"problem.yaml": "problem", "contribution.yaml": "contribution"}
 MAX_MESSAGE = 300

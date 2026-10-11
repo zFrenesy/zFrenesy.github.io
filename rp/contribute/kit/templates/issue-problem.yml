@@ -24,6 +24,20 @@ body:
         - New question
     validations:
       required: true
+  - type: dropdown
+    id: discipline
+    attributes:
+      label: Discipline
+      description: A subproblem inherits its parent's discipline.
+      options:
+        - Mathematics
+        - Economics
+        - Computer Science
+  - type: input
+    id: classification
+    attributes:
+      label: Classification code
+      description: "An MSC 2020 code (for example 11B13), a JEL code (for example C21) or an ACM CCS code. A subproblem inherits its parent's."
   - type: textarea
     id: statement
     attributes:

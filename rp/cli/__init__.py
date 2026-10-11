@@ -137,6 +137,114 @@ def cmd_submit(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_intake(args: argparse.Namespace) -> int:
+    from rp.intake.engine import process
+    from rp.intake.github import GhReadOnly
+    from rp.intake.publication import apply_plan
+    from rp.timeutil import SystemClock
+
+    research = _research(args)
+    port = GhReadOnly(args.repo)
+    if args.pr:
+        snapshot, blobs = port.snapshot_pull(args.pr)
+    else:
+        snapshot, blobs = port.snapshot_issue(args.issue), None
+    now = args.now or SystemClock().now().isoformat()
+    plan = process(snapshot, research, app_id=args.app_id, now=now, blobs=blobs)
+    print(f"{snapshot.kind} #{snapshot.number} by {snapshot.author.login} (ID {snapshot.author.id}): status {plan.state.status}")
+    for warning in plan.warnings:
+        print(f"warning: {warning}")
+    outcome = plan.outcome
+    if outcome is not None:
+        for line in outcome.blocking:
+            print(f"blocking: {line}")
+        for number, question in enumerate(outcome.questions, 1):
+            print(f"question {number} [{question.key}]: {question.text}" + (f" (default: {question.default})" if question.default else ""))
+        if outcome.candidate is not None:
+            print(f"candidate: {outcome.candidate.folder}")
+            print(outcome.candidate.report.render())
+    apply_plan(plan, port, snapshot, app_id=args.app_id)
+    print("Nothing was changed on GitHub (dry run).")
+    return 0
+
+
+def cmd_intake_run(args: argparse.Namespace) -> int:
+    """Process one event, or every open intake item (scheduled reconciliation). Used only by intake.yml."""
+    from rp.intake.engine import process
+    from rp.intake.github import GhLive
+    from rp.intake.publication import apply_plan
+    from rp.timeutil import SystemClock
+
+    research = _research(args)
+    port = GhLive(args.repo)
+    numbers: list[int] = []
+    if args.event:
+        event = json.loads(Path(args.event).read_text(encoding="utf-8"))
+        comment = event.get("comment") or {}
+        if (comment.get("performed_via_github_app") or {}).get("id") == args.app_id:
+            print("skipping the App's own comment")
+            return 0
+        item = event.get("issue") or event.get("pull_request") or {}
+        if item.get("number"):
+            numbers.append(int(item["number"]))
+    else:
+        for page in port.api.pages(f"repos/{args.repo}/issues?state=open&labels=intake"):
+            numbers.extend(i["number"] for i in page)
+    failed = 0
+    for number in numbers:
+        try:
+            snapshot = port.snapshot_issue(number)
+            blobs = None
+            if snapshot.kind == "pull_request":
+                snapshot, blobs = port.snapshot_pull(number)
+            plan = process(snapshot, research, app_id=args.app_id, now=SystemClock().now().isoformat(), blobs=blobs)
+            apply_plan(plan, port, snapshot, app_id=args.app_id)
+            print(f"#{number}: {plan.state.status}")
+        except Exception as exc:  # one failing item must not block the others; it is retried next run
+            failed += 1
+            print(f"#{number}: error: {exc}", file=sys.stderr)
+    return 1 if failed else 0
+
+
+def cmd_links(args: argparse.Namespace) -> int:
+    from rp import strict_yaml
+    from rp.contribute.check import changed_paths, folder_key, read_folder
+    from rp.validation.links import BoundedHttp, check_external_links, verify_pins
+
+    research = _research(args)
+    folders = sorted({key[1] for _, path in changed_paths(research.root, args.base, args.head) if (key := folder_key(path))})
+    failed = False
+    http = BoundedHttp()
+    for folder in folders:
+        files = read_folder(research.root, folder)
+        name = "contribution.yaml" if "contribution.yaml" in files else "problem.yaml"
+        if name not in files:
+            continue
+        record = strict_yaml.load(files[name][0])
+        texts = {n: c for n, (c, _m) in files.items()}
+        report = verify_pins(check_external_links(record, texts, where=folder), http)
+        for issue in report.issues:
+            print(f"{issue.severity}: {issue}")
+        for note in report.notes:
+            print(f"note: {note}")
+        failed |= not report.ok
+    print("FAIL" if failed else f"PASS ({len(folders)} folder(s))")
+    return 1 if failed else 0
+
+
+def cmd_links_sweep(args: argparse.Namespace) -> int:
+    from rp.validation.links import BoundedHttp, sweep_links
+
+    research = _research(args)
+    status = sweep_links(research.root, BoundedHttp())
+    Path(args.out).write_text(json.dumps(status, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    counts: dict[str, int] = {}
+    for entry in status["links"].values():
+        counts[entry["state"]] = counts.get(entry["state"], 0) + 1
+    print(f"Wrote {args.out}: " + (", ".join(f"{n} {s}" for s, n in sorted(counts.items())) or "no linked artifacts"))
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="rp", description="we-solve research platform tools")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -181,6 +289,38 @@ def main(argv: Sequence[str] | None = None) -> int:
     send.add_argument("--base")
     send.add_argument("--dir")
     send.set_defaults(func=cmd_submit)
+
+    intake = sub.add_parser("intake", help="intake bot tools")
+    intake_sub = intake.add_subparsers(dest="intake_command", required=True)
+    dry = intake_sub.add_parser("dry-run", help="show what the intake bot would do for an issue or pull request; changes nothing")
+    dry.add_argument("--repo", required=True, help="OWNER/NAME of the research repository")
+    target = dry.add_mutually_exclusive_group(required=True)
+    target.add_argument("--issue", type=int)
+    target.add_argument("--pr", type=int)
+    dry.add_argument("--app-id", type=int, default=0, help="intake App ID whose state comments are trusted (default: none)")
+    dry.add_argument("--now", help="UTC instant to evaluate reminders at (default: now)")
+    dry.add_argument("--dir", help="local research checkout (default: current directory)")
+    dry.set_defaults(func=cmd_intake)
+    live = intake_sub.add_parser("run", help="(intake App workflow only) process an event or all open intake items")
+    live.add_argument("--repo", required=True)
+    live.add_argument("--app-id", type=int, required=True)
+    live_target = live.add_mutually_exclusive_group(required=True)
+    live_target.add_argument("--event", help="path to the GitHub event JSON")
+    live_target.add_argument("--all-open", action="store_true")
+    live.add_argument("--dir")
+    live.set_defaults(func=cmd_intake_run)
+
+    links = sub.add_parser("links", help="external link checks")
+    links_sub = links.add_subparsers(dest="links_command", required=True)
+    verify = links_sub.add_parser("verify", help="check pinned artifact links in new folders through the GitHub and Hugging Face APIs")
+    verify.add_argument("--base")
+    verify.add_argument("--head")
+    verify.add_argument("--dir")
+    verify.set_defaults(func=cmd_links)
+    sweep = links_sub.add_parser("sweep", help="check every pinned artifact link and write an availability file for the site")
+    sweep.add_argument("--out", required=True)
+    sweep.add_argument("--dir")
+    sweep.set_defaults(func=cmd_links_sweep)
 
     args = parser.parse_args(argv)
     if args.func is cmd_new and args.what != "problem" and not args.alias:

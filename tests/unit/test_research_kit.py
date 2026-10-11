@@ -117,3 +117,33 @@ def test_research_check_reads_contributions_as_data():
     assert "python -P -m rp check" in run and "--base HEAD^1 --head HEAD" in run
     assert steps[-1]["working-directory"] == "${{ runner.temp }}"
     assert "pull_request_target" not in text and "secrets" not in text
+
+
+def test_intake_caller_only_when_the_app_is_approved():
+    from rp.contribute.kit import INTAKE_FILES
+
+    plain = render_kit(research=RESEARCH, platform=PLATFORM, ref=SHA, site_url=SITE)
+    assert not set(INTAKE_FILES) & set(plain)
+    with_app = render_kit(research=RESEARCH, platform=PLATFORM, ref=SHA, site_url=SITE, intake_app_id=123456)
+    caller = yaml.safe_load(with_app[".github/workflows/intake.yml"])
+    job = caller["jobs"]["intake"]
+    assert job["uses"] == f"{PLATFORM}/.github/workflows/intake.yml@{SHA}" and job["with"]["app_id"] == "123456"
+    assert set(caller[True]) == {"issues", "issue_comment", "pull_request_target", "schedule"}
+    assert caller["permissions"] == {"contents": "read"} and job["secrets"] == {"intake_app_private_key": "${{ secrets.INTAKE_APP_PRIVATE_KEY }}"}
+    with pytest.raises(ValueError):
+        render_kit(research=RESEARCH, platform=PLATFORM, ref=SHA, site_url=SITE, intake_app_id=0)
+
+
+def test_intake_workflow_never_checks_out_pull_request_code():
+    text = (ROOT / ".github" / "workflows" / "intake.yml").read_text(encoding="utf-8")
+    workflow = yaml.safe_load(text)
+    assert list(workflow[True]) == ["workflow_call"] and workflow["permissions"] == {"contents": "read"}
+    steps = workflow["jobs"]["intake"]["steps"]
+    checkouts = [s for s in steps if s.get("uses", "").startswith("actions/checkout@")]
+    assert [s["with"]["ref"] for s in checkouts] == ["${{ inputs.platform_ref }}", "${{ github.event.repository.default_branch }}"]
+    assert all(s["with"]["persist-credentials"] is False for s in checkouts)
+    assert "pull_request.head" not in text and "github.head_ref" not in text
+    assert workflow["jobs"]["intake"]["environment"] == "intake"
+    assert "python -P -m rp intake run" in steps[-1]["run"]
+    links = yaml.safe_load((ROOT / ".github" / "workflows" / "research-check.yml").read_text())["jobs"]["links"]
+    assert "rp links verify" in links["steps"][-1]["run"] and links["permissions"] == {"contents": "read"}

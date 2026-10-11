@@ -1,0 +1,52 @@
+# Linked artifacts and reference links (spec §10). Which of these hosts are enabled
+# is set by allowed_external_hosts in platform.yaml. The URL must carry the same pin
+# as the record: the named group "pin" is compared with the pin value.
+schema_version: 1
+artifact_hosts:
+  github:
+    name: GitHub
+    hosts: [github.com]
+    pin_kind: git_commit
+    url_pattern: "^/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/(tree|blob|commit)/(?P<pin>[0-9a-f]{40})(/[^?#]*)?$"
+    verify: github_api
+  hugging_face:
+    name: Hugging Face
+    hosts: [huggingface.co]
+    pin_kind: hf_revision
+    url_pattern: "^/((datasets|spaces)/)?[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/(tree|blob|resolve|commit)/(?P<pin>[0-9a-f]{40})(/[^?#]*)?$"
+    verify: hugging_face_api
+  zenodo:
+    name: Zenodo
+    hosts: [zenodo.org, doi.org]
+    pin_kind: zenodo_doi
+    url_pattern: "^/(records?/(?P<record>[1-9][0-9]*)|(?P<pin>10\\.5281/zenodo\\.[1-9][0-9]*))/?$"
+    verify: format_only
+  software_heritage:
+    name: Software Heritage
+    hosts: [archive.softwareheritage.org]
+    pin_kind: swhid
+    url_pattern: "^/(?P<pin>swh:1:(cnt|dir|rev|rel|snp):[0-9a-f]{40})(;[^?#]*)?/?$"
+    verify: format_only
+shorteners:
+  - adf.ly
+  - bit.do
+  - bit.ly
+  - bl.ink
+  - buff.ly
+  - cutt.ly
+  - goo.gl
+  - is.gd
+  - lnkd.in
+  - ow.ly
+  - rb.gy
+  - rebrand.ly
+  - s.id
+  - shorte.st
+  - shorturl.at
+  - t.co
+  - t.ly
+  - tiny.cc
+  - tinyurl.com
+  - v.gd
+  - x.co
+pickle_suffixes: [.bin, .ckpt, .joblib, .pickle, .pkl, .pt, .pth]

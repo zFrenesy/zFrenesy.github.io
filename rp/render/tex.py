@@ -87,6 +87,11 @@ _LABEL_SPAN = re.compile(r'<span\b(?=[^>]*\bdata-tex-label=)[^>]*>\s*</span>')
 _HAS_MATH = re.compile(r"\$|\\\(|\\\[|\\begin\{(?:equation|align|gather|multline|flalign|eqnarray|displaymath)")
 
 
+def contains_math(html: str) -> bool:
+    """True when rendered HTML (outside code and pre) carries maths for MathJax to typeset."""
+    return bool(_HAS_MATH.search(_LITERAL.sub("", html)))
+
+
 class RenderError(RuntimeError):
     pass
 

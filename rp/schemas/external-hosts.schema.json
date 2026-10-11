@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/external-hosts.schema.json",
+  "title": "External hosts",
+  "description": "policies/external-hosts.yaml: where linked artifacts may live, how each host is pinned, and the rules for reference links (§10).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "artifact_hosts", "shorteners", "pickle_suffixes"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "artifact_hosts": {
+      "type": "object",
+      "propertyNames": {"enum": ["github", "hugging_face", "zenodo", "software_heritage"]},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "hosts", "pin_kind", "url_pattern", "verify"],
+        "properties": {
+          "name": {"$ref": "common.schema.json#/$defs/short_text"},
+          "hosts": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9.-]+$"}},
+          "pin_kind": {"enum": ["git_commit", "hf_revision", "zenodo_doi", "swhid"]},
+          "url_pattern": {"type": "string", "format": "regex", "maxLength": 500},
+          "verify": {"enum": ["github_api", "hugging_face_api", "format_only"]}
+        }
+      }
+    },
+    "shorteners": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9.-]+$"}},
+    "pickle_suffixes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^\\.[a-z0-9]+$"}}
+  }
+}

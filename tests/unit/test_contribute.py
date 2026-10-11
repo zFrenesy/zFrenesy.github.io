@@ -150,7 +150,11 @@ def test_new_review_and_problem_validate_once_filled(research):
     fill_todos(folder / "problem.yaml")
     (folder / "statement.md").write_text("# A special case\n\nShow it for $n=3$.\n")
     report = check(research.root)
+    assert any("too short" in e for e in report.errors)
+    (folder / "statement.md").write_text("# A special case\n\nLet $G$ be a finite group of order $3$. Show that every element $g \\in G$ satisfies $g^3 = e$.\n")
+    report = check(research.root)
     assert report.ok, report.render()
+    assert any("Not established as open or novel" in w for w in report.warnings)
 
 
 class FakeRunner:

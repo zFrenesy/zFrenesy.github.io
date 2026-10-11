@@ -10,6 +10,7 @@
   <span class="visually-hidden" data-pagefind-ignore data-pagefind-filter="Kind">{{ problem.record.kind }}</span><span class="visually-hidden" data-pagefind-ignore data-pagefind-filter="Source">{{ problem.source[1] }}</span><span class="visually-hidden" data-pagefind-ignore data-pagefind-filter="Source status">{{ problem.status_label or 'not recorded' }}</span><span class="visually-hidden" data-pagefind-ignore data-pagefind-filter="LLM status">{{ problem.llm_status }}</span>
 </header>
 {% if problem.record.kind in ['proposed', 'derived'] %}<p class="notice" role="note">Proposed by a contributor. Not established as open or novel.{% if problem.record.kind == 'derived' %} This question does not change its parent problem’s status.{% endif %}</p>{% endif %}
+{% if parent|default(none) %}<p class="row-meta">Subproblem of <a href="{{ url(parent.url) }}">{{ parent.alias }}</a> ({{ problem.record.derivation.nature|replace('_', ' ') }})</p>{% endif %}
 
 <section class="statement" aria-labelledby="statement-title">
   <h2 id="statement-title">Statement</h2>
@@ -28,7 +29,7 @@
   {% if not problem.attempts %}<p class="muted">No attempts yet. A partial result, a useful reduction or a careful exploration all count. <a href="#contribute">Contribute below.</a></p>{% endif %}
 </section>
 
-{% if reviews|default([]) %}<section aria-labelledby="problem-reviews-title" data-pagefind-ignore><h2 id="problem-reviews-title">Reviews <span class="count">{{ problem.reviews|length }}</span></h2><p class="small muted">Historical problem-level reviews keep their original scope; they do not assess every contribution.</p><ul class="rows">{% for item in reviews %}{{ contribution_card(item) }}{% endfor %}</ul>{% if problem.reviews|length > reviews|length %}<p><a href="{{ url(problem.url ~ 'reviews/') }}">All {{ problem.reviews|length }} reviews</a></p>{% endif %}</section>{% endif %}
+{% if reviews|default([]) %}<section aria-labelledby="problem-reviews-title" data-pagefind-ignore><h2 id="problem-reviews-title">Reviews <span class="count">{{ problem.reviews|length }}</span></h2>{% if problem.reviews|selectattr('legacy')|list %}<p class="small muted">Historical problem-level reviews keep their original scope; they do not assess every contribution.</p>{% endif %}<ul class="rows">{% for item in reviews %}{{ contribution_card(item) }}{% endfor %}</ul>{% if problem.reviews|length > reviews|length %}<p><a href="{{ url(problem.url ~ 'reviews/') }}">All {{ problem.reviews|length }} reviews</a></p>{% endif %}</section>{% endif %}
 
 {% if related|default([]) %}<section aria-labelledby="related-title"><h2 id="related-title">Related questions</h2><ul class="rows">{% for item in related %}<li class="row"><a class="row-title" href="{{ url(item.url) }}">{{ item.label }}</a><span class="row-meta">{{ item.relation|default('related')|replace('_', ' ') }}</span></li>{% endfor %}</ul></section>{% endif %}
 

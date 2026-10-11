@@ -19,8 +19,9 @@ def main():
     build.add_argument('--no-search',action='store_true',help='development only: skip search index')
     build.add_argument('--production',action='store_true')
     build.add_argument('--report',type=Path)
+    build.add_argument('--link-status',type=Path,help='availability file from rp links sweep')
     args=parser.parse_args()
-    report=build_site(args.work,args.out,base_url=args.base_url,cache_dir=args.cache_dir,packages_dir=args.packages_dir,staging=not args.production,search=not args.no_search)
+    report=build_site(args.work,args.out,base_url=args.base_url,cache_dir=args.cache_dir,packages_dir=args.packages_dir,staging=not args.production,search=not args.no_search,link_status=args.link_status)
     text=json.dumps(report,ensure_ascii=False,indent=2)+'\n'
     if args.report:
         args.report.parent.mkdir(parents=True,exist_ok=True)

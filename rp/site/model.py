@@ -7,6 +7,7 @@ import re
 import stat
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ from rp.fingerprint import manifest_from_blobs, scientific_fingerprint
 from rp.identity.ids import parse_id
 from rp.identity.paths import contribution_dir, problem_dir
 from rp.ledger.state import LedgerCorruption, LedgerState, rebuild
+from rp.reviews import ReviewInput, summarise_reviews
 from rp.validation.records import validate_record
 
 __all__ = ["Contribution", "Problem", "SiteModel", "load_model", "slugify"]
@@ -65,6 +67,7 @@ class Contribution:
     accepted_at: str | None = None
     problem: Problem | None = None
     rendered: Any = None
+    review_summary: Any = None  # rp.reviews.RevisionReviews for this exact revision
 
     @property
     def id(self) -> str:
@@ -109,6 +112,11 @@ class Contribution:
             if key in self.dates:
                 return self.dates[key]["value"][:10]
         return ""
+
+    @property
+    def review_note(self) -> str | None:
+        """'Disputed', the 90-day no-reply note, or None (spec §17)."""
+        return self.review_summary.note if self.review_summary else None
 
     @property
     def url(self) -> str:
@@ -314,11 +322,29 @@ def load_model(work: Path) -> SiteModel:
                                                 "person_ref": person["person_ref"], "github_id": person["github_id"], "submitted": [], "contributed": []})
                 (entry["submitted"] if person is crecord["attribution"]["submitter"] else entry["contributed"]).append(contribution)
         problem.contributions.sort(key=lambda c: (c.is_review, c.sort_date or "9999", c.alias))
+    _attach_reviews(contributions, events)
     if missing := set(state.statement_heads) - set(problems):
         raise ValueError(f"accepted problem source is missing: {sorted(missing)[0]}")
     if missing := set(state.revision_heads) - set(contributions):
         raise ValueError(f"accepted contribution source is missing: {sorted(missing)[0]}")
     return SiteModel(problems, contributions, people, events)
+
+
+def _attach_reviews(contributions: dict[str, Contribution], events: list[dict[str, Any]]) -> None:
+    order: dict[str, list[str]] = defaultdict(list)
+    for event in sorted((e for e in events if e["type"] == "revision_accepted"), key=lambda e: e["recorded_at"]):
+        order[event["payload"]["contribution_id"]].append(event["payload"]["revision_id"])
+    # "Today" is the ledger checkpoint, so a rebuild of the same snapshot gives the same page.
+    today = max((date.fromisoformat(e["recorded_at"][:10]) for e in events), default=date(1970, 1, 1))
+    inputs = []
+    for c in contributions.values():
+        if c.record["type"] in ("review", "author_response") and c.accepted_at:
+            submitter = c.record["attribution"]["submitter"]
+            inputs.append(ReviewInput(c.record, str(submitter.get("github_id") or submitter["person_ref"]),
+                                      date.fromisoformat(c.accepted_at[:10]), c.alias))
+    summary = summarise_reviews(inputs, order, today)
+    for c in contributions.values():
+        c.review_summary = summary.get((c.id, c.record["revision_id"]))
 
 
 def _validate(kind: str, record: dict) -> None:
