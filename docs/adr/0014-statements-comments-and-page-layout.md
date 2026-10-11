@@ -85,3 +85,41 @@ preparation and deployment must not be reported as successful comment posting.
 After installation, check a problem and immutable attempt revision without
 posting an unsolicited test comment. Milestone 3's separate intake App and
 milestone 4 automation remain outside this change.
+
+## Staging checkpoint
+
+The implementation and migration were published at these immutable revisions:
+
+| Input | Commit |
+| --- | --- |
+| Platform | `a4cee165b0d0b339c95c571161711e5db7593e75` |
+| Research and regenerated kit | `b67a7776559f753f4aa399e91d2d0887ae359916` |
+| Ledger | `32fbf11c3ab7e4011b8b9a6ef4173758abe0d146` |
+
+Local validation: 754 tests passed, one optional full legacy-import test
+skipped; all 28 staging settings checks passed. All 1,221 source slices,
+digests, rights fields and statement mappings were checked. The full build
+contains 6,155 problems, 5,154 contribution revisions and 29,666 HTML pages,
+with no rendering or publication-check errors. Unsupported constructs remain
+in source boxes (362 boxes across 252 of 11,184 rendered documents).
+
+Desktop (1280 px) and mobile (375 px) browser checks covered Erdős #1,
+UnsolvedMath TOP-6, immutable and latest attempt routes, all seven reviewed
+statement-heading exceptions, long equations, dark mode, opt-in comments and
+comment-load retry. No page overflow or browser errors were found in these
+checks. Giscus configuration was checked with a simulated client; App
+installation and real comment posting remain deferred by the owner.
+
+GitHub platform tests passed in
+[run 38176574477](https://github.com/we-solve-staging/we-solve-staging.github.io/actions/runs/38176574477).
+Pages publication succeeded in
+[run 38176750641](https://github.com/we-solve-staging/we-solve-staging.github.io/actions/runs/38176750641).
+Its evidence confirms all three input commits above, Python 3.12.14 and Node
+22.23.3. The validated site is 574,961,833 bytes; the largest initial payload
+under the existing manuscript-exclusion budget is 160,940 bytes.
+
+Live checks passed after deployment: Erdős #1, TOP-6 and an attempt revision at
+desktop and mobile widths; latest/revision discussion-key agreement; no initial
+third-party requests; source catalogue links; homepage, search and citation
+routes; and equality of the deployed site/CSS/MathJax/search assets with the
+repository. Giscus activation remains pending the deferred owner installation.
