@@ -236,12 +236,15 @@ class AliasReservation:
         }
 
 
-def _existing(registry: AliasRegistryView, entity_id: str) -> AliasReservation | None:
+def _existing(registry: AliasRegistryView, entity_id: str, *, counter_key: str | None, external: str | None = None) -> AliasReservation | None:
+    """The entity's live alias, if it already has one for this same request; refuse a different one."""
     alias = registry.live_alias_of(entity_id)
     if alias is None:
         return None
     rec = registry.alias_record(alias)
     assert rec is not None
+    if rec.counter_key != counter_key or rec.external_identifier != external:
+        raise AliasError("alias.entity_has_alias", f"{entity_id} already has the alias {alias}")
     return AliasReservation(
         rec.alias,
         rec.entity_id,
@@ -283,7 +286,7 @@ def plan_counter_alias(
 ) -> AliasReservation:
     """Mint ``<PREFIX>-<n>`` for a new top-level problem (literature or proposed)."""
     _require_entity(entity_id, "problem")
-    if (found := _existing(registry, entity_id)) is not None:
+    if (found := _existing(registry, entity_id, counter_key=f"top:{prefix}")) is not None:
         return found
     scheme = policy.counter_scheme(prefix)
     if not scheme.enabled:
@@ -298,7 +301,7 @@ def plan_external_alias(
 ) -> AliasReservation:
     """Reserve ``<PREFIX>-<external id>`` for a catalogued problem."""
     _require_entity(entity_id, "problem")
-    if (found := _existing(registry, entity_id)) is not None:
+    if (found := _existing(registry, entity_id, counter_key=None, external=external_identifier)) is not None:
         return found
     scheme = policy.scheme(scheme_id)
     if scheme.allocation != "external_identifier":
@@ -320,7 +323,8 @@ def plan_subproblem_alias(
 ) -> AliasReservation:
     """Mint ``<parent>.<k>``: the k-th subproblem registered under the parent."""
     _require_entity(entity_id, "problem")
-    if (found := _existing(registry, entity_id)) is not None:
+    parent_key = f"sub:{normalise_alias(parent_alias)}"
+    if (found := _existing(registry, entity_id, counter_key=parent_key)) is not None:
         return found
     parent = _bound_problem(policy, registry, parent_alias)
     parts = policy.parse(parent.alias)
@@ -342,10 +346,11 @@ def plan_contribution_alias(
 ) -> AliasReservation:
     """Mint ``<problem>-A<k>`` or ``<problem>-R<k>`` on the contribution's home problem."""
     _require_entity(entity_id, "contribution")
-    if (found := _existing(registry, entity_id)) is not None:
+    letter = contribution_alias_letter(contribution_type)
+    home_key = f"con:{normalise_alias(home_problem_alias)}:{letter}"
+    if (found := _existing(registry, entity_id, counter_key=home_key)) is not None:
         return found
     home = _bound_problem(policy, registry, home_problem_alias)
-    letter = contribution_alias_letter(contribution_type)
     key = f"con:{home.alias}:{letter}"
     seq, alias = _next_free(registry, key, lambda n: f"{home.alias}-{letter}{n}")
     scheme_id = policy.parse(home.alias).scheme_id

@@ -197,3 +197,17 @@ def test_resolution_is_exact_lookup(reg):
     with pytest.raises(AliasError) as info:
         resolve_alias(POLICY, reg, "ERDOS-6")
     assert info.value.code == "alias.unknown"
+
+
+def test_existing_alias_must_match_the_request(reg):
+    entity = prb()
+    reg.apply(plan_counter_alias(POLICY, reg, prefix="MATH", entity_id=entity))
+    with pytest.raises(AliasError) as info:
+        plan_subproblem_alias(POLICY, reg, parent_alias="ERDOS-5", entity_id=entity)
+    assert info.value.code == "alias.entity_has_alias"
+    with pytest.raises(AliasError):
+        plan_counter_alias(POLICY, reg, prefix="ECON", entity_id=entity)
+    contribution = con()
+    reg.apply(plan_contribution_alias(POLICY, reg, home_problem_alias="ERDOS-5", contribution_type="attempt", entity_id=contribution))
+    with pytest.raises(AliasError):
+        plan_contribution_alias(POLICY, reg, home_problem_alias="ERDOS-5", contribution_type="review", entity_id=contribution)
