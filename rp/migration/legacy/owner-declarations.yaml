@@ -1,0 +1,33 @@
+# Owner rights declaration for migrated legacy material (docs/adr/0009-legacy-rights.md).
+# Made by the owner of both the legacy repository and this platform during milestone 2
+# planning, and confirmed in the milestone 2 sign-off.
+schema_version: 1
+declared_by:
+  github_login: mehmetmars7
+  role: Owner of mehmetmars7/Erdosproblems-llm-hunter and of the we-solve organisation
+declared_on: "2026-10-11"
+source:
+  repository: mehmetmars7/Erdosproblems-llm-hunter
+  commit: b1f633121074e16579fa7fd05314e5f504d29bae
+licence: CC-BY-4.0
+scope:
+  - "attacks/open_problems/erdos/*/*.tex"
+  - "attacks/open_problems/economics/*/*.tex"
+  - "attacks/open_problems/mo/*/*.tex"
+  - "attacks/open_problems/top_problems/*/*.tex"
+  - "lists/unsolvedmath/problems.json: English statement summaries"
+exceptions:
+  - match: "Top Open Problems records whose UnsolvedMath code starts with OWR-"
+    licence: CC-BY-SA-4.0
+    reason: Derived from Oberwolfach Reports material licensed CC BY-SA 4.0; ShareAlike cannot be relicensed.
+  - match: "UnsolvedMath metadata (IDs, codes, titles, categories)"
+    licence: CC-BY-4.0
+    reason: Upstream licence; attribute Ulam AI and the UnsolvedMath Contributors and indicate changes.
+notes:
+  human_contributions: >-
+    Files in top_problems/Human_Contribution are summaries written by the legacy site about
+    externally published work. The declaration covers the summary text only; the underlying
+    papers and code remain with their authors and are linked, not re-hosted.
+  openai_summaries: >-
+    Files in top_problems/openai summarise claims from openai/math (Apache-2.0). The
+    declaration covers our summaries only; openai/math sources are linked at a pinned commit.

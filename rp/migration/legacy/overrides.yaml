@@ -1,0 +1,23 @@
+# Per-file facts the legacy headers do not encode, taken from each file's own text.
+schema_version: 1
+human_contributions:
+  "30006546":
+    authors: [{display_name: Scott Duke Kominers, login: null}]
+    contribution_mode: human_ai
+    model_uses: [{declared_name: GPT-6 Astra, provider: openai, family: gpt-6-astra, role: proof_search}]
+    external_sources: ["https://arxiv.org/abs/2607.28429v2"]
+  "30007127":
+    authors: [{display_name: Scott Duke Kominers, login: null}]
+    contribution_mode: human_ai
+    model_uses: [{declared_name: GPT-6 Astra, provider: openai, family: gpt-6-astra, role: proof_search}]
+    external_sources: ["https://arxiv.org/abs/2607.28429v2"]
+  "30007097":
+    authors: [{display_name: Ryan Shea, login: shea256}]
+    contribution_mode: human_ai
+    model_uses: [{declared_name: Codex, provider: openai, family: codex, role: proof_search}]
+    external_sources: ["https://github.com/shea256/ordered-binary-matrix-removal"]
+  "30007169":
+    authors: [{display_name: Samuel Kittle, login: samuel-kittle}, {display_name: Constantin Kogler, login: ckkogler}]
+    contribution_mode: human_ai
+    model_uses: [{declared_name: GPT-6 Astra, provider: openai, family: gpt-6-astra, role: proof_search}]
+    external_sources: ["https://arxiv.org/abs/2610.10511"]

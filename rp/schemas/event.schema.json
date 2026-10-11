@@ -197,7 +197,7 @@
       "required": ["subject_id", "kind", "claim"],
       "properties": {
         "subject_id": {"$ref": "common.schema.json#/$defs/entity_id"},
-        "kind": {"enum": ["first_posted", "generation", "activity"]},
+        "kind": {"enum": ["first_posted", "generation", "activity", "repository_first_added"]},
         "claim": {"$ref": "common.schema.json#/$defs/date_claim"},
         "source_text": {"$ref": "common.schema.json#/$defs/short_text"}
       }

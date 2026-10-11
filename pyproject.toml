@@ -26,6 +26,7 @@ rp = [
     "policies/disciplines/*.yaml",
     "policies/classifications/*.yaml",
     "profiles/*.yaml",
+    "migration/legacy/*.yaml",
 ]
 
 [tool.pytest.ini_options]

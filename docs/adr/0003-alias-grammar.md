@@ -42,7 +42,14 @@ revision      r<k>                         per contribution, assigned at accepta
 - Resolution is an exact lookup in the ledger-derived registry after upper-casing. It never guesses from the grammar.
 - Reparenting changes relations only; `ERDOS-5.2` keeps its name even if its parent changes. Promotion adds `promoted_from` and keeps the alias.
 
-**Deferred.** Namespaces for UnsolvedMath (including `LOCAL-` records), MathOverflow and `openai/math` are decided with the milestone 2 importer.
+**Milestone 2 namespaces (owner decision, 2026-10-11).**
+
+- `TOP-<id>` copies the legacy Top Open Problems catalogue's permanent numeric ID. Its allocation authority is `legacy-top-open-problems-catalogue`.
+  - UnsolvedMath codes such as `MPP-001` stay as separate external IDs with authority unsolvedmath.com.
+  - The 838 `LOCAL-` records are local additions and get no UnsolvedMath external ID.
+  - `TOP-` names the collection. It is not a status, and it stays when a problem is solved.
+- `MO-<question id>` copies the MathOverflow question ID (authority mathoverflow.net).
+- openai/math claim summaries are contributions, not problems, so they need no namespace.
 
 ## Consequences
 

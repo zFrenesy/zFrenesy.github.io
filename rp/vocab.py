@@ -176,4 +176,4 @@ TIME_SOURCES = (
     "catalogue_source",
 )
 ACTOR_KINDS = ("person", "app", "system", "legacy_import")
-DECLARED_DATE_KINDS = ("first_posted", "generation", "activity")
+DECLARED_DATE_KINDS = ("first_posted", "generation", "activity", "repository_first_added")
