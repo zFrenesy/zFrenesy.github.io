@@ -1,6 +1,7 @@
 # Legacy folder -> declared model use. Migration only (docs/adr/0010-legacy-migration.md):
 # the owner confirmed these folder names are correct. The platform never infers a model
-# from a folder for new contributions. declared_name is the label the legacy site showed.
+# from a folder for new contributions. declared_name is the label the legacy site showed
+# (folder name with spaces; Economics used MODEL_LABELS in scripts/economics_catalog.py).
 schema_version: 1
 evidence: legacy folder name, owner-confirmed
 folders:
@@ -11,10 +12,10 @@ folders:
   erdos/gpt_5.2: {declared_name: gpt 5.2, provider: openai, family: gpt-5.2}
   erdos/gpt_pro_5.2: {declared_name: gpt pro 5.2, provider: openai, family: gpt-pro}
   erdos/gpt_pro_5.4: {declared_name: gpt pro 5.4, provider: openai, family: gpt-pro}
-  economics/gpt6_astra_ultra: {declared_name: gpt6 astra ultra, provider: openai, family: gpt-6-astra}
-  economics/gpt_6_astra_ultra: {declared_name: gpt 6 astra ultra, provider: openai, family: gpt-6-astra}
-  economics/gpt_6_astra_pro: {declared_name: gpt 6 astra pro, provider: openai, family: gpt-6-astra}
-  economics/opus_5.5_high: {declared_name: opus 5.5 high, provider: anthropic, family: claude-opus, settings: {effort: high}}
+  economics/gpt6_astra_ultra: {declared_name: GPT 6 Astra Ultra, provider: openai, family: gpt-6-astra}
+  economics/gpt_6_astra_ultra: {declared_name: GPT 6 Astra Ultra, provider: openai, family: gpt-6-astra}
+  economics/gpt_6_astra_pro: {declared_name: GPT 6 Astra Pro, provider: openai, family: gpt-6-astra}
+  economics/opus_5.5_high: {declared_name: Claude Opus 5.5 High, provider: anthropic, family: claude-opus, settings: {effort: high}}
   mo/gpt_pro_5.2: {declared_name: gpt pro 5.2, provider: openai, family: gpt-pro}
   top_problems/gpt_6_astra_ultra: {declared_name: gpt 6 astra ultra, provider: openai, family: gpt-6-astra}
   top_problems/gpt_6_astra_pro: {declared_name: gpt 6 astra pro, provider: openai, family: gpt-6-astra}

@@ -1,0 +1,28 @@
+\section{Erd\H{o}s Problem \#3: independent continuation}
+\noindent Date: 2026-09-23. Research attempt; no claim of a new published result.
+\subsection{1) TARGET AND SOURCE AUDIT}
+Does every set $A\subseteq\mathbb N$ with $\sum_{a\in A}1/a=\infty$ contain arithmetic progressions of every finite length?
+
+All supplied versions considered: \texttt{3.tex}.
+The source gives a finite weighted extremal comparison using a block-pasting lemma inherited from unavailable rounds. I verify that crucial lemma here and give an explicit sufficient analytic threshold; neither establishes the required extremal bound.
+\subsection{2) WORK}
+\paragraph{Checking the pasting step.}
+Suppose $N_{j+1}\ge3N_j$ and $E_j\subset(2N_j,3N_j]$ is $k$-AP-free, $k\ge3$. No three-term arithmetic progression can cross between these blocks. Indeed let $z$ be its largest element, in the block with scale $N$. Every earlier block lies in $(0,N]$. If $y$ is earlier, then $2y\le2N<z$, impossible since $x=2y-z>0$. If $y$ is in the same block and $x$ earlier, then $x=2y-z>4N-3N=N$, also impossible. Thus any three consecutive terms of an arithmetic progression stay in one block, and consequently the union is $k$-AP-free. The source\textquotesingle s strict inequality on successive scales can be weakened to $\ge3$.
+
+\paragraph{A sufficient rate with its exact limitation.}
+Let $r_k(N)$ denote the largest $k$-AP-free subset of $[1,N]$. If for some $C,\epsilon>0$,
+\[
+r_k(N)\le {CN\over(\log N)^{1+\epsilon}}\qquad(N\ge3),
+\]
+then every $k$-AP-free set has finite reciprocal sum. Partition it into $(2^j,2^{j+1}]$; translation preserves progressions, so that block has at most $r_k(2^j)$ elements and contributes at most $r_k(2^j)/2^j$. The sum is bounded by $C(\log2)^{-1-\epsilon}\sum_{j\ge2}j^{-1-\epsilon}$, apart from finitely many initial terms.
+This argument fails at exponent $1$: its majorant is then harmonic. It fails even if an unspecified $o(N/\log N)$ bound is supplied, since $\sum_{j\ge3}(j\log j)^{-1}$ diverges. Thus qualitative improvement at that scale is insufficient for this sufficient-condition argument.
+\subsection{3) ADVERSARIAL VERIFICATION}
+The pasting proof uses positivity, open left endpoints, and a consecutive triple crossing a boundary; none can be silently removed. The divergent majorant is an obstruction to the bound, not a constructed progression-free counterexample. No actual upper bound of the displayed strength is established for every $k$.
+\subsection{4) FINAL}
+\textbf{UNRESOLVED.}
+The hard step remains a summable upper bound on $r_k(2^j)/2^j$ for every $k$, or another argument forcing long progressions. The endpoint clarification is verified local progress only.
+\subsection{5) SOURCES CHECKED}
+The entire supplied \texttt{3.tex} was checked. An attempted direct check of \texttt{https://www.erdosproblems.com/3} on 2026-09-23 returned HTTP 403; no external fact from that page is assumed.
+\subsection{6) COMPLETION ESTIMATE}
+This is a conservative subjective measure of progress toward the original question, not a probability of correctness or a claim that the remaining work is routine.
+\textbf{COMPLETION: 10\%}

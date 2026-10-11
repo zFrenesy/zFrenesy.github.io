@@ -1,0 +1,41 @@
+{
+  "source_repository": "mehmetmars7/Erdosproblems-llm-hunter",
+  "source_commit": "b1f633121074e16579fa7fd05314e5f504d29bae",
+  "licence": "Apache-2.0",
+  "files": {
+    "format-tex.js": {
+      "from": "docs/problem.html",
+      "blob": "1c4c11edb525adc45eb609249355b762e5c9f1e3",
+      "extracted": "function formatTeX (inline script), unchanged; wrapper added",
+      "body_sha256": "sha256:ee0dbc7177a84d324ea9b88174f1607b60a65b44d171b0848d25a3018270cc6e"
+    },
+    "tex-bare-math.js": {
+      "from": "docs/tex-bare-math.js",
+      "blob": "9e7544e7e78a8522cb9193ab242f336c41a49aa6",
+      "extracted": "whole file, unchanged"
+    },
+    "tex-references.js": {
+      "from": "docs/tex-references.js",
+      "blob": "b432faf33e16aed044ebdf106306886f3a15228a",
+      "extracted": "whole file, unchanged"
+    },
+    "mathjax-config.js": {
+      "from": "docs/problem.html",
+      "blob": "1c4c11edb525adc45eb609249355b762e5c9f1e3",
+      "extracted": "window.MathJax macros and tex options unchanged; loader paths, typesetting scope, accessibility and error handling adapted for self-hosting"
+    },
+    "economics-normalize.js": {
+      "from": "docs/economics-detail.js",
+      "blob": "6b83549d1c8c6ed052f795498288b4a321adf66d",
+      "extracted": "normalizedReferences, bracedGroup, replaceCommand, normalizedStatement unchanged; wrapper added"
+    },
+    "../../rp/render/legacy_prep.py": {
+      "from": "build_site.py, scripts/economics_catalog.py",
+      "blob": [
+        "e684bfe9f1ae41117b4b12f757116403cd5e155d",
+        "e063ce12c8c8cac2c420ae0a6ec597bd52c71c66"
+      ],
+      "extracted": "replace_tex_command, tex_notation_macros, expand_tex_notation, normalize_article_notation, parse_numbered_problem_tex, parse_collection_metadata, current_collection_provenance, extract_statement unchanged; economics attempt preparation block unchanged"
+    }
+  }
+}

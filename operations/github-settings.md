@@ -24,7 +24,7 @@ This is the whole target (spec §7, §21), grouped by the milestone that needs e
 | Setting | Value |
 | --- | --- |
 | Policy | Organisation plus selected actions; GitHub-created and Marketplace-verified actions not blanket-allowed |
-| Allowlist | Exact SHA-pinned refs only; currently `actions/checkout@3d3c42e…` (v7.0.1) and `actions/setup-python@5fda3b9…` (v7.0.0) |
+| Allowlist | Exact SHA-pinned refs only; currently `actions/checkout@3d3c42e…` (v7.0.1), `actions/setup-python@5fda3b9…` (v7.0.0) and `actions/setup-node@8207627…` (v7.0.0) |
 | Require full-length SHA pinning | On |
 | Default `GITHUB_TOKEN` | Read-only; Actions cannot create or approve pull requests |
 | Fork PR approval | "First-time contributors who are new to GitHub" |
