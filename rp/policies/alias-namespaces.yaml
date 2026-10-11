@@ -1,0 +1,20 @@
+# Alias schemes that copy identifiers assigned by an external catalogue (docs/adr/0003).
+# A local alias does not assert that the external catalogue recognises the record.
+# Platform-minted counter schemes (MATH-12, ECON-12, CS-3) come from discipline configs.
+# Namespaces for UnsolvedMath, MathOverflow and openai/math are decided in milestone 2.
+schema_version: 1
+schemes:
+  - id: erdos
+    prefix: ERDOS
+    allocation: external_identifier
+    allocation_authority: erdosproblems.com
+    local_pattern: "[1-9][0-9]{0,5}"
+    external_scheme: erdosproblems
+    description: Erdős problem numbers assigned by erdosproblems.com (status data via teorth/erdosproblems).
+  - id: economics-legacy
+    prefix: ECON
+    allocation: external_identifier
+    allocation_authority: legacy-economics-catalogue
+    local_pattern: "[A-Z][0-9]{1,2}-[1-9][0-9]{0,4}"
+    external_scheme: legacy-economics
+    description: Economics IDs assigned once from the JEL code and initial ranking in the legacy repository; current ranks never rename them.

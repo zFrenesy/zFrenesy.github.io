@@ -1,0 +1,81 @@
+schema_version: 1
+contribution_id: con_c9f47395e0104fd39f047e5238247076
+revision_id: rev_3be2b459ca244e0582eadb6caad44102
+expected_predecessor: null
+type: attempt
+home_problem_id: prb_513573fa8f584633a18944338e0c133d
+targets:
+- target_kind: problem
+  problem_id: prb_513573fa8f584633a18944338e0c133d
+  statement_revision_id: stm_9f7460026cba4093b983e5770de5077d
+  scope: whole_statement
+title: Synthetic AI-generated exploration
+profiles:
+- id: mathematical_argument
+  version: 1
+  required: true
+claim:
+  type: exploration
+  scope_statement: Explores reductions; no result claimed.
+  assumptions: []
+  limitations: []
+attribution:
+  submitter:
+    person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  humans:
+  - person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - prompting
+    - submission
+    authorship_confirmation: confirmed
+  organisations: []
+  contribution_mode: ai_only
+model_uses:
+- provider: example-ai
+  declared_name: Example Model Pro
+  family: example-model
+  version: example-model-2026-09-01
+  role: generated_draft
+  settings:
+    reasoning: high
+  generation_date:
+    value: '2026-10-01'
+    precision: day
+  provenance:
+    level: declared
+    evidence: []
+lineage: []
+artifacts:
+- role: manuscript
+  location: in_repository
+  path: files/attempt.md
+  media_type: text/markdown
+rights:
+  licence: CC-BY-4.0
+  redistribution: permitted
+declarations:
+  rights:
+    confirmed: true
+    source: form_field
+    actor: per_f20ee1063dba47a0b48a60da0a9c7f28
+    recorded_at: '2026-10-02T10:00:00Z'
+  public_disclosure:
+    confirmed: true
+    source: form_field
+    actor: per_f20ee1063dba47a0b48a60da0a9c7f28
+    recorded_at: '2026-10-02T10:00:00Z'
+  ai_disclosure:
+    confirmed: true
+    source: form_field
+    actor: per_f20ee1063dba47a0b48a60da0a9c7f28
+    recorded_at: '2026-10-02T10:00:00Z'

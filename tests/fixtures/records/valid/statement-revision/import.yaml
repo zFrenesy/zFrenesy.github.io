@@ -1,0 +1,12 @@
+schema_version: 1
+statement_revision_id: stm_285a7fe663ec488681f1032cf8e3ae79
+problem_id: prb_35305d0327194e23845f398914e422e0
+predecessor: null
+statement_artifact:
+  path: statement.md
+  digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+  bytes: 812
+change_kind: import
+change_note: Imported from the legacy snapshot.
+source_commit: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+recorded_at: '2026-10-11T09:00:00Z'

@@ -1,0 +1,25 @@
+# Active at launch by owner decision (docs/adr/0008), overriding the §14 launch list.
+schema_version: 1
+slug: computer-science
+name: Computer Science
+alias_prefix: CS
+status: active
+usable_as_secondary: true
+classification:
+  scheme: acm-ccs2012
+  name: ACM Computing Classification System 2012
+  code_pattern: "^[0-9]{8}$"
+  vocabulary: null
+profiles:
+  - mathematical_argument
+  - computational_experiment
+  - review
+accepted_formats:
+  stored: [tex, bib, md, pdf, png, jpeg, csv, json, txt]
+  linked: [lean, coq, isabelle, code, notebook, model, dataset]
+rubric_addendum: >-
+  Benchmarks and experiments may not be reproducible: code is shown and linked, never run by the
+  platform. Ask for exact versions, parameters and pinned links, and do not treat reported numbers
+  as verified.
+disclaimer: null
+stewards: []

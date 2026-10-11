@@ -1,0 +1,62 @@
+# expect: schema.const
+schema_version: 1
+problem_id: prb_8f62333045e64920a3d33501a06f19cc
+statement_revision_id: stm_33e9bb00c18f4f38b8529d924d692dd0
+expected_statement_predecessor: null
+title: Synthetic proposed question about sorting networks
+kind: proposed
+disciplines:
+- discipline: computer-science
+  role: primary
+classifications:
+- scheme: acm-ccs2012
+  code: "10003752"
+statement_artifact:
+  path: statement.md
+external_ids: []
+sources: []
+relations: []
+rights:
+  licence: CC-BY-4.0
+  redistribution: permitted
+attribution:
+  submitter:
+    person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  humans:
+  - person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  organisations: []
+  contribution_mode: human_ai
+model_uses:
+- provider: example-ai
+  declared_name: Example Model Pro
+  family: example-model
+  version: unknown
+  role: generated_draft
+  settings:
+    reasoning: high
+  generation_date:
+    value: '2026-10-01'
+    precision: day
+  provenance:
+    level: declared
+    evidence: []
+proposal:
+  motivation: Synthetic motivation text.
+  relation_to_known: Synthetic relation to known results.
+  elementary_checks: Small cases n <= 6 checked by hand.
+  literature_search: Searched arXiv and DBLP with the listed keywords.
+  novelty_disclaimer_acknowledged: false

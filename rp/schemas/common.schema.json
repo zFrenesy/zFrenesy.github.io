@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/common.schema.json",
+  "title": "Shared definitions",
+  "description": "Identifiers, digests, dates, people, rights and other building blocks used by every record schema.",
+  "$defs": {
+    "problem_id": {"type": "string", "pattern": "^prb_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"},
+    "contribution_id": {"type": "string", "pattern": "^con_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"},
+    "revision_id": {"type": "string", "pattern": "^rev_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"},
+    "statement_revision_id": {"type": "string", "pattern": "^stm_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"},
+    "artifact_id": {"type": "string", "pattern": "^art_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"},
+    "event_id": {"type": "string", "pattern": "^evt_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"},
+    "publication_snapshot_id": {"type": "string", "pattern": "^pub_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"},
+    "person_id": {"type": "string", "pattern": "^per_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"},
+    "entity_id": {
+      "type": "string",
+      "pattern": "^(prb|con|rev|stm|art|evt|pub|per)_[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"
+    },
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "git_sha": {"type": "string", "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}$"},
+    "utc_instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "date_claim": {
+      "description": "A claimed or observed date with the precision it actually has; date-only claims stay date-only.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "precision"],
+      "properties": {
+        "value": {"type": "string"},
+        "precision": {"enum": ["year", "month", "day", "instant"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"precision": {"const": "year"}}, "required": ["precision"]},
+          "then": {"properties": {"value": {"pattern": "^[0-9]{4}$"}}}
+        },
+        {
+          "if": {"properties": {"precision": {"const": "month"}}, "required": ["precision"]},
+          "then": {"properties": {"value": {"pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"}}}
+        },
+        {
+          "if": {"properties": {"precision": {"const": "day"}}, "required": ["precision"]},
+          "then": {"properties": {"value": {"format": "date", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}}}
+        },
+        {
+          "if": {"properties": {"precision": {"const": "instant"}}, "required": ["precision"]},
+          "then": {"properties": {"value": {"$ref": "#/$defs/utc_instant"}}}
+        }
+      ]
+    },
+    "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 64},
+    "title": {"type": "string", "minLength": 1, "maxLength": 300},
+    "short_text": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "long_text": {"type": "string", "minLength": 1, "maxLength": 20000},
+    "https_url": {"type": "string", "format": "uri", "pattern": "^https://", "maxLength": 2048},
+    "policy_version": {"type": "string", "pattern": "^policy/[1-9][0-9]*$"},
+    "rubric_version": {"type": "string", "pattern": "^rubric/[1-9][0-9]*$"},
+    "github_login": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}(\\[bot\\])?$"},
+    "github_id": {"type": "integer", "minimum": 1},
+    "spdx_expression": {
+      "type": "string",
+      "maxLength": 200,
+      "pattern": "^(LicenseRef-[A-Za-z0-9.-]+|[A-Za-z0-9][A-Za-z0-9.+-]*)( (AND|OR|WITH) (LicenseRef-[A-Za-z0-9.-]+|[A-Za-z0-9][A-Za-z0-9.+-]*))*$"
+    },
+    "rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["licence", "redistribution"],
+      "properties": {
+        "licence": {"$ref": "#/$defs/spdx_expression"},
+        "redistribution": {"enum": ["permitted", "link_only", "unclear"]},
+        "holders": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/short_text"}},
+        "third_party": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["description"],
+            "properties": {
+              "description": {"$ref": "#/$defs/short_text"},
+              "licence": {"$ref": "#/$defs/spdx_expression"},
+              "source_url": {"$ref": "#/$defs/https_url"}
+            }
+          }
+        },
+        "notes": {"$ref": "#/$defs/short_text"}
+      }
+    },
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["person_ref", "github_id", "login_at_event", "display_name", "roles", "authorship_confirmation"],
+      "properties": {
+        "person_ref": {"$ref": "#/$defs/person_id"},
+        "github_id": {"anyOf": [{"$ref": "#/$defs/github_id"}, {"type": "null"}]},
+        "login_at_event": {"anyOf": [{"$ref": "#/$defs/github_login"}, {"type": "null"}]},
+        "display_name": {"$ref": "#/$defs/short_text"},
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "conceptualization", "data_curation", "formal_analysis", "funding_acquisition",
+              "investigation", "methodology", "project_administration", "resources", "software",
+              "supervision", "validation", "visualization", "writing_original_draft",
+              "writing_review_editing", "prompting", "submission"
+            ]
+          }
+        },
+        "authorship_confirmation": {"enum": ["confirmed", "listed_by_submitter", "declined"]}
+      }
+    },
+    "organisation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"$ref": "#/$defs/short_text"},
+        "ror": {"type": "string", "pattern": "^https://ror\\.org/0[a-z0-9]{6}[0-9]{2}$"},
+        "role": {"$ref": "#/$defs/short_text"}
+      }
+    },
+    "attribution": {
+      "description": "Who is accountable and who did the research. Even AI-only work has an accountable submitter.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["submitter", "humans", "organisations", "contribution_mode"],
+      "properties": {
+        "submitter": {"$ref": "#/$defs/person"},
+        "humans": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/person"}},
+        "organisations": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/organisation"}},
+        "contribution_mode": {"enum": ["human_only", "ai_only", "human_ai"]}
+      }
+    },
+    "provenance_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["share_link", "transcript", "attestation", "run_log", "statement"]},
+        "url": {"$ref": "#/$defs/https_url"},
+        "digest": {"$ref": "#/$defs/digest"},
+        "note": {"$ref": "#/$defs/short_text"}
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "share_link"}}, "required": ["kind"]}, "then": {"required": ["url"]}},
+        {"if": {"properties": {"kind": {"const": "transcript"}}, "required": ["kind"]}, "then": {"required": ["digest"]}},
+        {"if": {"properties": {"kind": {"const": "attestation"}}, "required": ["kind"]}, "then": {"required": ["url", "digest"]}}
+      ]
+    },
+    "provenance": {
+      "description": "Provenance levels, weakest to strongest: declared, linked, archived, archived_attested, platform_generated.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "evidence"],
+      "properties": {
+        "level": {"enum": ["declared", "linked", "archived", "archived_attested", "platform_generated"]},
+        "evidence": {"type": "array", "maxItems": 20, "items": {"$ref": "#/$defs/provenance_evidence"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"level": {"const": "linked"}}, "required": ["level"]},
+          "then": {"properties": {"evidence": {"contains": {"properties": {"kind": {"const": "share_link"}}}}}}
+        },
+        {
+          "if": {"properties": {"level": {"const": "archived"}}, "required": ["level"]},
+          "then": {"properties": {"evidence": {"contains": {"properties": {"kind": {"const": "transcript"}}}}}}
+        },
+        {
+          "if": {"properties": {"level": {"const": "archived_attested"}}, "required": ["level"]},
+          "then": {"properties": {"evidence": {"contains": {"properties": {"kind": {"const": "attestation"}}}}}}
+        }
+      ]
+    },
+    "model_use": {
+      "description": "One declared use of a model or tool. Identity is never inferred from a folder or conversation URL.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "declared_name", "family", "version", "role", "settings", "generation_date", "provenance"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1, "maxLength": 100},
+        "declared_name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "family": {"anyOf": [{"type": "string", "minLength": 1, "maxLength": 100}, {"type": "null"}]},
+        "version": {
+          "description": "Exact known API/model version, or the literal 'unknown'.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "role": {
+          "enum": ["generated_draft", "proof_search", "computation", "editing", "review_assistance", "translation", "other"]
+        },
+        "settings": {
+          "anyOf": [
+            {
+              "type": "object",
+              "maxProperties": 30,
+              "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,63}$"},
+              "additionalProperties": {"type": ["string", "integer", "boolean"]}
+            },
+            {"type": "null"}
+          ]
+        },
+        "generation_date": {"anyOf": [{"$ref": "#/$defs/date_claim"}, {"type": "null"}]},
+        "provenance": {"$ref": "#/$defs/provenance"}
+      }
+    },
+    "declaration": {
+      "description": "A legal or authorship declaration made by a person. Never inferred from model output.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confirmed", "source", "actor"],
+      "properties": {
+        "confirmed": {"type": "boolean"},
+        "source": {"enum": ["form_field", "comment_command", "cli_confirmation", "legacy_import"]},
+        "actor": {"$ref": "#/$defs/person_id"},
+        "recorded_at": {"$ref": "#/$defs/utc_instant"},
+        "evidence_url": {"$ref": "#/$defs/https_url"}
+      }
+    },
+    "contribution_revision_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contribution_id", "revision_id"],
+      "properties": {
+        "contribution_id": {"$ref": "#/$defs/contribution_id"},
+        "revision_id": {"$ref": "#/$defs/revision_id"}
+      }
+    },
+    "pin": {
+      "description": "Immutable reference: full commit SHA, Hugging Face revision hash, versioned Zenodo DOI, or SWHID.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {"enum": ["git_commit", "hf_revision", "zenodo_doi", "swhid"]},
+        "value": {"type": "string", "maxLength": 300}
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "git_commit"}}, "required": ["kind"]}, "then": {"properties": {"value": {"pattern": "^[0-9a-f]{40}$"}}}},
+        {"if": {"properties": {"kind": {"const": "hf_revision"}}, "required": ["kind"]}, "then": {"properties": {"value": {"pattern": "^[0-9a-f]{40}$"}}}},
+        {"if": {"properties": {"kind": {"const": "zenodo_doi"}}, "required": ["kind"]}, "then": {"properties": {"value": {"pattern": "^10\\.5281/zenodo\\.[1-9][0-9]*$"}}}},
+        {"if": {"properties": {"kind": {"const": "swhid"}}, "required": ["kind"]}, "then": {"properties": {"value": {"pattern": "^swh:1:(cnt|dir|rev|rel|snp):[0-9a-f]{40}$"}}}}
+      ]
+    },
+    "external_link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "pin"],
+      "properties": {
+        "url": {"$ref": "#/$defs/https_url"},
+        "pin": {"$ref": "#/$defs/pin"}
+      }
+    },
+    "manifest_entry": {
+      "description": "One entry of a sorted artifact manifest; part of the scientific fingerprint S.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["location", "logical_path", "digest", "bytes", "mode"],
+          "properties": {
+            "location": {"const": "in_repository"},
+            "logical_path": {"type": "string", "pattern": "^files/[A-Za-z0-9_][A-Za-z0-9._-]*(/[A-Za-z0-9_][A-Za-z0-9._-]*)*$"},
+            "digest": {"$ref": "#/$defs/digest"},
+            "bytes": {"type": "integer", "minimum": 0},
+            "mode": {"enum": ["100644", "100755"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["location", "url", "pin"],
+          "properties": {
+            "location": {"const": "external_pinned"},
+            "url": {"$ref": "#/$defs/https_url"},
+            "pin": {"$ref": "#/$defs/pin"}
+          }
+        }
+      ]
+    },
+    "extensions": {
+      "description": "Optional namespaced extensions (e.g. org.example.field); preserved by export and import.",
+      "type": "object",
+      "maxProperties": 20,
+      "propertyNames": {"pattern": "^[a-z0-9]+(-[a-z0-9]+)*(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"},
+      "additionalProperties": {"type": "object"}
+    }
+  }
+}

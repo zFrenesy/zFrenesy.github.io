@@ -1,0 +1,8 @@
+schema_version: 1
+id: mathematical_argument
+version: 1
+title: Mathematical argument
+applies_to: [attempt, counterexample, correction, legacy_record]
+description: >-
+  A written mathematical argument (proof, disproof, partial result, reduction or exploration) in TeX
+  or Markdown, optionally with a PDF, bibliography and figures. Formal proofs are linked, not hosted.

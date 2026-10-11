@@ -1,0 +1,116 @@
+# expect: schema.enum
+schema_version: 1
+contribution_id: con_2dff41b5d25f4e75bea0d51d3d2e73a6
+revision_id: rev_dd21f133a679421aa5940eaef39f5db1
+expected_predecessor: null
+type: attempt
+home_problem_id: prb_35305d0327194e23845f398914e422e0
+targets:
+- target_kind: problem
+  problem_id: prb_35305d0327194e23845f398914e422e0
+  statement_revision_id: stm_285a7fe663ec488681f1032cf8e3ae79
+  scope: special_case
+  scope_note: Case k = 3.
+- target_kind: problem
+  problem_id: prb_15e2003d7839442c88d89d40d7b16049
+  statement_revision_id: stm_e2a7b75430a141d790b656ae3387dd45
+  scope: whole_statement
+title: Synthetic partial result for k = 3
+profiles:
+- id: mathematical_argument
+  version: 1
+  required: true
+- id: computational_experiment
+  version: 1
+  required: false
+claim:
+  type: partial_result
+  scope_statement: Proves the statement for k = 3 only.
+  assumptions:
+  - k = 3
+  limitations:
+  - The general case is not addressed.
+  completion_estimate:
+    percent: 30
+    justification: One of several cases needed.
+attribution:
+  submitter:
+    person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  humans:
+  - person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  - person_ref: per_fbcac9df54b745d1bde881805c231a71
+    github_id: 100002
+    login_at_event: contributor-b
+    display_name: Contributor B
+    roles:
+    - validation
+    authorship_confirmation: listed_by_submitter
+  organisations: []
+  contribution_mode: human_ai
+model_uses:
+- provider: example-ai
+  declared_name: Example Model Pro
+  family: example-model
+  version: unknown
+  role: generated_draft
+  settings:
+    reasoning: high
+  generation_date:
+    value: '2026-10-01'
+    precision: day
+  provenance:
+    level: linked
+    evidence:
+    - kind: share_link
+      url: https://chat.example.com/share/abc
+lineage: []
+artifacts:
+- role: manuscript_source
+  location: in_repository
+  path: files/attempt.tex
+  media_type: application/x-tex
+- role: bibliography
+  location: in_repository
+  path: files/refs.bib
+  media_type: application/x-bibtex
+- role: code
+  location: external_pinned
+  external:
+    url: https://github.com/example/search-code
+    pin:
+      kind: git_commit
+      value: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  description: Search code; linked, not run by the platform.
+rights:
+  licence: CC-BY-4.0
+  redistribution: permitted
+declarations:
+  rights:
+    confirmed: true
+    source: model_extraction
+    actor: per_f20ee1063dba47a0b48a60da0a9c7f28
+    recorded_at: '2026-10-02T10:00:00Z'
+  public_disclosure:
+    confirmed: true
+    source: form_field
+    actor: per_f20ee1063dba47a0b48a60da0a9c7f28
+    recorded_at: '2026-10-02T10:00:00Z'
+  ai_disclosure:
+    confirmed: true
+    source: form_field
+    actor: per_f20ee1063dba47a0b48a60da0a9c7f28
+    recorded_at: '2026-10-02T10:00:00Z'

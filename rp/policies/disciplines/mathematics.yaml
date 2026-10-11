@@ -1,0 +1,24 @@
+schema_version: 1
+slug: mathematics
+name: Mathematics
+alias_prefix: MATH
+status: active
+usable_as_secondary: true
+classification:
+  scheme: msc2020
+  name: Mathematics Subject Classification 2020
+  code_pattern: "^[0-9]{2}(-[0-9]{2}|-XX|[A-Z]([0-9]{2}|xx))?$"
+  vocabulary: msc2020
+profiles:
+  - mathematical_argument
+  - computational_experiment
+  - review
+accepted_formats:
+  stored: [tex, bib, md, pdf, png, jpeg, csv, json, txt]
+  linked: [lean, coq, isabelle, code, notebook, dataset]
+rubric_addendum: >-
+  Watch for confident but invalid proofs and for statement drift. Check that the argument addresses
+  the exact target statement revision rather than a weaker, stronger or altered statement, and that
+  the claim label matches what is actually shown.
+disclaimer: null
+stewards: []

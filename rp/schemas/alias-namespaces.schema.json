@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/alias-namespaces.schema.json",
+  "title": "Alias namespaces",
+  "description": "policies/alias-namespaces.yaml: alias schemes that copy external identifiers. Counter schemes come from discipline configs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "schemes"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "schemes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "prefix", "allocation", "allocation_authority", "local_pattern", "external_scheme", "description"],
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/slug"},
+          "prefix": {"type": "string", "pattern": "^[A-Z][A-Z0-9]{1,9}$"},
+          "allocation": {"const": "external_identifier"},
+          "allocation_authority": {"type": "string", "minLength": 1, "maxLength": 100},
+          "local_pattern": {"type": "string", "minLength": 1, "maxLength": 100, "format": "regex"},
+          "external_scheme": {"$ref": "common.schema.json#/$defs/slug"},
+          "description": {"$ref": "common.schema.json#/$defs/short_text"}
+        }
+      }
+    }
+  }
+}

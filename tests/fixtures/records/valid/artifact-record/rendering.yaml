@@ -1,0 +1,23 @@
+schema_version: 1
+artifact_id: art_b42a353f3af4405d8998e21874a22982
+artifact_version: 1
+role: rendering
+logical_path: rendered/attempt.html
+media_type: text/html
+digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+bytes: 10240
+rights:
+  licence: CC-BY-4.0
+  redistribution: permitted
+provenance:
+  origin: platform_renderer
+  renderer:
+    name: pandoc
+    version: "3.5"
+    source_fingerprint: sha256:2222222222222222222222222222222222222222222222222222222222222222
+availability: available
+locations:
+- kind: release_asset
+  repository: we-solve/research
+  release_tag: pkg-r1
+  asset_name: attempt.html

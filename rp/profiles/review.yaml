@@ -1,0 +1,8 @@
+schema_version: 1
+id: review
+version: 1
+title: Review
+applies_to: [review, author_response]
+description: >-
+  A review of one exact contribution revision, or an author's response to one, with finding, checked
+  scope, location, evidence, AI assistance and conflicts of interest.

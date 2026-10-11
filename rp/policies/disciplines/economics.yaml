@@ -1,0 +1,23 @@
+schema_version: 1
+slug: economics
+name: Economics
+alias_prefix: ECON
+status: active
+usable_as_secondary: true
+classification:
+  scheme: jel
+  name: Journal of Economic Literature classification
+  code_pattern: "^[A-Z]([0-9]{1,2})?$"
+  vocabulary: jel
+profiles:
+  - mathematical_argument
+  - computational_experiment
+  - review
+accepted_formats:
+  stored: [tex, bib, md, pdf, png, jpeg, csv, json, txt]
+  linked: [code, notebook, dataset]
+rubric_addendum: >-
+  Results may depend on data that is unavailable to readers. Ask for a data-availability statement
+  whenever a result relies on empirical data, and distinguish theoretical results from empirical ones.
+disclaimer: null
+stewards: []

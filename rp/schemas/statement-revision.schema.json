@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/statement-revision.schema.json",
+  "title": "Statement revision (ledger)",
+  "description": "Written by the controller. Changing a statement or its scientific interpretation creates a new statement revision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "statement_revision_id", "problem_id", "predecessor", "statement_artifact",
+    "change_kind", "change_note", "source_commit", "recorded_at"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "statement_revision_id": {"$ref": "common.schema.json#/$defs/statement_revision_id"},
+    "problem_id": {"$ref": "common.schema.json#/$defs/problem_id"},
+    "predecessor": {"anyOf": [{"$ref": "common.schema.json#/$defs/statement_revision_id"}, {"type": "null"}]},
+    "statement_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "digest", "bytes"],
+      "properties": {
+        "path": {"enum": ["statement.md", "statement.tex"]},
+        "digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "change_kind": {"enum": ["initial", "import", "editorial", "interpretation", "correction"]},
+    "change_note": {"$ref": "common.schema.json#/$defs/short_text"},
+    "source_commit": {"$ref": "common.schema.json#/$defs/git_sha"},
+    "recorded_at": {"$ref": "common.schema.json#/$defs/utc_instant"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"predecessor": {"type": "null"}}, "required": ["predecessor"]},
+      "then": {"properties": {"change_kind": {"enum": ["initial", "import"]}}},
+      "else": {"properties": {"change_kind": {"enum": ["editorial", "interpretation", "correction"]}}}
+    }
+  ]
+}

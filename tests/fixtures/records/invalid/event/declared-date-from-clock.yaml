@@ -1,0 +1,25 @@
+# expect: event.time_source
+schema_version: 1
+event_id: evt_e693aeb1c3714d78aa1d6379c3aebf83
+type: date_declared
+actor:
+  kind: legacy_import
+targets:
+- con_f3832cce01c1480d92216268f7d70753
+occurred_at:
+  value: '2026-10-09'
+  precision: day
+recorded_at: '2026-10-11T09:00:00Z'
+time_source: system_clock
+evidence:
+- kind: legacy_file
+  ref: attacks/open_problems/economics/example/C00-1_v2.tex@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+policy_version: policy/1
+idempotency_key: sha256:2222222222222222222222222222222222222222222222222222222222222222
+payload:
+  subject_id: con_f3832cce01c1480d92216268f7d70753
+  kind: first_posted
+  claim:
+    value: '2026-10-09'
+    precision: day
+  source_text: 'FIRST_POSTED: 2026-10-09'

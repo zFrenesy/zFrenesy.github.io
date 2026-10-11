@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/problem.schema.json",
+  "title": "problem.yaml",
+  "description": "Authored record of one problem and its current statement revision (§4, §15).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "problem_id", "statement_revision_id", "expected_statement_predecessor", "title",
+    "kind", "disciplines", "classifications", "statement_artifact", "external_ids", "sources",
+    "relations", "rights"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "problem_id": {"$ref": "common.schema.json#/$defs/problem_id"},
+    "statement_revision_id": {"$ref": "common.schema.json#/$defs/statement_revision_id"},
+    "expected_statement_predecessor": {
+      "anyOf": [{"$ref": "common.schema.json#/$defs/statement_revision_id"}, {"type": "null"}]
+    },
+    "title": {"$ref": "common.schema.json#/$defs/title"},
+    "kind": {"enum": ["catalogued", "literature", "proposed", "derived", "legacy_unclassified"]},
+    "disciplines": {
+      "description": "Exactly one primary and any number of secondary disciplines. URLs never contain the discipline.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["discipline", "role"],
+        "properties": {
+          "discipline": {"$ref": "common.schema.json#/$defs/slug"},
+          "role": {"enum": ["primary", "secondary"]}
+        }
+      },
+      "contains": {"required": ["role"], "properties": {"role": {"const": "primary"}}},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "topics": {"type": "array", "maxItems": 20, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/slug"}},
+    "classifications": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scheme", "code"],
+        "properties": {
+          "scheme": {"$ref": "common.schema.json#/$defs/slug"},
+          "code": {"type": "string", "minLength": 1, "maxLength": 64}
+        }
+      }
+    },
+    "statement_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {"path": {"enum": ["statement.md", "statement.tex"]}}
+    },
+    "external_ids": {
+      "description": "External scheme/identifier mappings with the allocation authority explicit.",
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scheme", "identifier", "authority"],
+        "properties": {
+          "scheme": {"$ref": "common.schema.json#/$defs/slug"},
+          "identifier": {"type": "string", "minLength": 1, "maxLength": 128},
+          "authority": {"$ref": "common.schema.json#/$defs/short_text"},
+          "url": {"$ref": "common.schema.json#/$defs/https_url"}
+        }
+      }
+    },
+    "sources": {
+      "description": "Source observations. Only catalogue sync or a curator change set may add or change them.",
+      "type": "array",
+      "maxItems": 50,
+      "items": {"$ref": "#/$defs/source_observation"}
+    },
+    "relations": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/relation"}},
+    "rights": {"$ref": "common.schema.json#/$defs/rights"},
+    "attribution": {"$ref": "common.schema.json#/$defs/attribution"},
+    "model_uses": {"type": "array", "maxItems": 20, "items": {"$ref": "common.schema.json#/$defs/model_use"}},
+    "citation": {"$ref": "#/$defs/citation"},
+    "proposal": {"$ref": "#/$defs/proposal"},
+    "derivation": {"$ref": "#/$defs/derivation"},
+    "extensions": {"$ref": "common.schema.json#/$defs/extensions"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"kind": {"const": "literature"}}, "required": ["kind"]},
+      "then": {"required": ["citation", "attribution", "model_uses"]}
+    },
+    {
+      "if": {"properties": {"kind": {"const": "proposed"}}, "required": ["kind"]},
+      "then": {"required": ["proposal", "attribution", "model_uses"]}
+    },
+    {
+      "if": {"properties": {"kind": {"const": "derived"}}, "required": ["kind"]},
+      "then": {"required": ["derivation", "attribution", "model_uses"]}
+    }
+  ],
+  "$defs": {
+    "source_observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "raw_status", "normalised_status", "snapshot", "observed_at", "provenance"],
+      "properties": {
+        "authority": {"$ref": "common.schema.json#/$defs/short_text"},
+        "source_url": {"$ref": "common.schema.json#/$defs/https_url"},
+        "raw_status": {"type": "string", "minLength": 1, "maxLength": 200},
+        "normalised_status": {
+          "enum": ["open", "partially_solved", "solved", "proved", "disproved", "independent", "unknown", "other"]
+        },
+        "snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {"enum": ["git_commit", "retrieval"]},
+            "repository_url": {"$ref": "common.schema.json#/$defs/https_url"},
+            "commit": {"$ref": "common.schema.json#/$defs/git_sha"},
+            "path": {"type": "string", "minLength": 1, "maxLength": 500},
+            "retrieved_at": {"$ref": "common.schema.json#/$defs/utc_instant"},
+            "digest": {"$ref": "common.schema.json#/$defs/digest"}
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"kind": {"const": "git_commit"}}, "required": ["kind"]},
+              "then": {"required": ["repository_url", "commit"]}
+            },
+            {
+              "if": {"properties": {"kind": {"const": "retrieval"}}, "required": ["kind"]},
+              "then": {"required": ["retrieved_at"]}
+            }
+          ]
+        },
+        "observed_at": {"$ref": "common.schema.json#/$defs/date_claim"},
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["recorded_by"],
+          "properties": {
+            "recorded_by": {"enum": ["catalogue_sync", "curator", "legacy_import"]},
+            "event_id": {"$ref": "common.schema.json#/$defs/event_id"},
+            "note": {"$ref": "common.schema.json#/$defs/short_text"}
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "target_problem_id"],
+      "properties": {
+        "type": {
+          "enum": [
+            "subproblem_of", "generalises", "implies", "implied_by", "equivalent_to", "variant_of",
+            "related", "duplicate_of", "promoted_from"
+          ]
+        },
+        "target_problem_id": {"$ref": "common.schema.json#/$defs/problem_id"},
+        "primary": {"type": "boolean"},
+        "note": {"$ref": "common.schema.json#/$defs/short_text"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"type": {"const": "subproblem_of"}}, "required": ["type"]},
+          "then": {"required": ["primary"]},
+          "else": {"not": {"required": ["primary"]}}
+        }
+      ]
+    },
+    "citation": {
+      "description": "Where a literature problem is stated. Displayed as 'citation not independently checked'.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference"],
+      "anyOf": [{"required": ["locator"]}, {"required": ["quote"]}],
+      "properties": {
+        "reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {"enum": ["doi", "arxiv", "isbn", "url"]},
+            "value": {"type": "string", "minLength": 1, "maxLength": 500}
+          },
+          "allOf": [
+            {"if": {"properties": {"kind": {"const": "doi"}}, "required": ["kind"]}, "then": {"properties": {"value": {"pattern": "^10\\.[0-9]{4,9}/[^\\s]+$"}}}},
+            {"if": {"properties": {"kind": {"const": "arxiv"}}, "required": ["kind"]}, "then": {"properties": {"value": {"pattern": "^([0-9]{4}\\.[0-9]{4,5}|[a-z-]+(\\.[A-Z]{2})?/[0-9]{7})(v[1-9][0-9]*)?$"}}}},
+            {"if": {"properties": {"kind": {"const": "isbn"}}, "required": ["kind"]}, "then": {"properties": {"value": {"pattern": "^(97[89][0-9]{10}|[0-9]{9}[0-9X])$"}}}},
+            {"if": {"properties": {"kind": {"const": "url"}}, "required": ["kind"]}, "then": {"properties": {"value": {"$ref": "common.schema.json#/$defs/https_url"}}}}
+          ]
+        },
+        "locator": {"$ref": "common.schema.json#/$defs/short_text"},
+        "quote": {"$ref": "common.schema.json#/$defs/long_text"}
+      }
+    },
+    "proposal": {
+      "description": "Admission material for a proposed problem (§15).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["motivation", "relation_to_known", "elementary_checks", "literature_search", "novelty_disclaimer_acknowledged"],
+      "properties": {
+        "motivation": {"$ref": "common.schema.json#/$defs/long_text"},
+        "relation_to_known": {"$ref": "common.schema.json#/$defs/long_text"},
+        "elementary_checks": {"$ref": "common.schema.json#/$defs/long_text"},
+        "literature_search": {"$ref": "common.schema.json#/$defs/long_text"},
+        "novelty_disclaimer_acknowledged": {"const": true}
+      }
+    },
+    "derivation": {
+      "description": "A subproblem or variant. It must not edit the parent and does not change the parent's status.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent_problem_id", "nature", "parent_status_unchanged"],
+      "properties": {
+        "parent_problem_id": {"$ref": "common.schema.json#/$defs/problem_id"},
+        "nature": {"enum": ["restriction", "special_case", "step", "reformulation", "generalisation"]},
+        "parent_status_unchanged": {"const": true}
+      }
+    }
+  }
+}

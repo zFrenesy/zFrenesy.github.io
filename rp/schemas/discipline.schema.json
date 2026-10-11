@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/discipline.schema.json",
+  "title": "Discipline configuration",
+  "description": "policies/disciplines/<slug>.yaml. Adding a discipline needs only this file, a classification vocabulary and tests (§14).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "slug", "name", "alias_prefix", "status", "usable_as_secondary", "classification",
+    "profiles", "accepted_formats", "rubric_addendum", "disclaimer", "stewards"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "slug": {"$ref": "common.schema.json#/$defs/slug"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 100},
+    "alias_prefix": {"type": "string", "pattern": "^[A-Z][A-Z0-9]{1,9}$"},
+    "status": {"enum": ["planned", "pilot", "active"]},
+    "usable_as_secondary": {
+      "description": "Whether problems may carry this discipline as a secondary label while it is planned.",
+      "type": "boolean"
+    },
+    "hold_reason": {"$ref": "common.schema.json#/$defs/short_text"},
+    "classification": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scheme", "name", "code_pattern", "vocabulary"],
+          "properties": {
+            "scheme": {"$ref": "common.schema.json#/$defs/slug"},
+            "name": {"type": "string", "minLength": 1, "maxLength": 200},
+            "code_pattern": {"type": "string", "minLength": 1, "maxLength": 200, "format": "regex"},
+            "vocabulary": {"anyOf": [{"$ref": "common.schema.json#/$defs/slug"}, {"type": "null"}]}
+          }
+        },
+        {"type": "null"}
+      ]
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+    },
+    "accepted_formats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stored", "linked"],
+      "properties": {
+        "stored": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["tex", "bib", "md", "pdf", "png", "jpeg", "csv", "json", "txt"]}
+        },
+        "linked": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["lean", "coq", "isabelle", "code", "notebook", "model", "dataset"]}
+        }
+      }
+    },
+    "rubric_addendum": {"$ref": "common.schema.json#/$defs/long_text"},
+    "disclaimer": {"anyOf": [{"type": "string", "minLength": 1, "maxLength": 300}, {"type": "null"}]},
+    "stewards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["login"],
+        "properties": {
+          "login": {"$ref": "common.schema.json#/$defs/github_login"},
+          "github_id": {"$ref": "common.schema.json#/$defs/github_id"}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "planned"}}, "required": ["status"]},
+      "then": {"required": ["hold_reason"]},
+      "else": {"properties": {"classification": {"type": "object"}}}
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+schema_version: 1
+contribution_id: con_f3832cce01c1480d92216268f7d70753
+revision_id: rev_af8acc25939b4406b217572e985fe6f1
+expected_predecessor: null
+type: legacy_record
+home_problem_id: prb_513573fa8f584633a18944338e0c133d
+targets:
+- target_kind: problem
+  problem_id: prb_513573fa8f584633a18944338e0c133d
+  statement_revision_id: stm_9f7460026cba4093b983e5770de5077d
+  scope: whole_statement
+title: Synthetic legacy attempt (second file of a _v2 pair)
+profiles:
+- id: mathematical_argument
+  version: 1
+  required: true
+claim:
+  type: full_solution
+  scope_statement: 'Legacy header ATTEMPT_STATUS: solved (a claim, not a status).'
+  assumptions: []
+  limitations: []
+attribution:
+  submitter:
+    person_ref: per_dc898022eefc4824957ad9bfc96eb5fd
+    github_id: 100003
+    login_at_event: legacy-owner
+    display_name: Legacy repository owner
+    roles:
+    - submission
+    authorship_confirmation: confirmed
+  humans: []
+  organisations: []
+  contribution_mode: ai_only
+model_uses:
+- provider: example-ai
+  declared_name: Example Model Pro
+  family: example-model
+  version: unknown
+  role: generated_draft
+  settings:
+    reasoning: high
+  generation_date:
+    value: '2026-10-01'
+    precision: day
+  provenance:
+    level: declared
+    evidence: []
+lineage:
+- relation: possible_revision_of
+  contribution_id: con_cc3f6f36b6c24d08940729b75016da71
+  revision_id: null
+  lineage_status: unknown
+  note: Same model folder and _v2 suffix; not evidence of revision lineage.
+artifacts:
+- role: manuscript_source
+  location: in_repository
+  path: files/C00-1_v2.tex
+  media_type: application/x-tex
+rights:
+  licence: LicenseRef-legacy-terms
+  redistribution: unclear
+declarations:
+  rights:
+    confirmed: true
+    source: legacy_import
+    actor: per_dc898022eefc4824957ad9bfc96eb5fd
+    recorded_at: '2026-10-02T10:00:00Z'
+  public_disclosure:
+    confirmed: true
+    source: legacy_import
+    actor: per_dc898022eefc4824957ad9bfc96eb5fd
+    recorded_at: '2026-10-02T10:00:00Z'
+  ai_disclosure:
+    confirmed: true
+    source: legacy_import
+    actor: per_dc898022eefc4824957ad9bfc96eb5fd
+    recorded_at: '2026-10-02T10:00:00Z'

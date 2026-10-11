@@ -1,0 +1,7 @@
+# Top-level JEL categories (letters only). The full vocabulary is added in milestone 2.
+schema_version: 1
+scheme: jel
+name: Journal of Economic Literature classification
+source_note: American Economic Association JEL classification system, top-level categories.
+top_level_length: 1
+top_level_codes: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "Y", "Z"]

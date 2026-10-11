@@ -1,0 +1,34 @@
+# Owner decisions (spec §13), confirmed 2026-10-11. See docs/adr/0008.
+schema_version: 1
+organisation: we-solve
+site:
+  base_url: https://we-solve.github.io/
+  discipline_sections:
+    - mathematics
+    - economics
+    - computer-science
+repositories:
+  platform: we-solve/we-solve.github.io
+  research: we-solve/research
+staging:
+  organisation: we-solve-staging
+legacy:
+  repository: mehmetmars7/Erdosproblems-llm-hunter
+  audited_commit: b1f633121074e16579fa7fd05314e5f504d29bae
+policy_version: policy/1
+licences:
+  manuscripts: CC-BY-4.0
+  software: Apache-2.0
+budget:
+  currency: USD
+  monthly_cap: "100.00"
+  newcomer_daily_pool: "3.00"
+# Kill switch (§8.3). Screening stays off until milestone 4 is signed off.
+screening_enabled: false
+subscription_fallback_enabled: false
+analytics: none
+allowed_external_hosts:
+  - github
+  - hugging_face
+  - zenodo
+  - software_heritage

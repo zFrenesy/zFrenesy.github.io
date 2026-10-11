@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/contribution.schema.json",
+  "title": "contribution.yaml",
+  "description": "Authored document for one exact proposed or accepted revision of a contribution, including reviews (§4).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "contribution_id", "revision_id", "expected_predecessor", "type", "home_problem_id",
+    "targets", "title", "profiles", "attribution", "model_uses", "lineage", "artifacts", "rights", "declarations"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "contribution_id": {"$ref": "common.schema.json#/$defs/contribution_id"},
+    "revision_id": {"$ref": "common.schema.json#/$defs/revision_id"},
+    "expected_predecessor": {"anyOf": [{"$ref": "common.schema.json#/$defs/revision_id"}, {"type": "null"}]},
+    "type": {"enum": ["attempt", "counterexample", "correction", "review", "author_response", "replication", "legacy_record"]},
+    "home_problem_id": {"$ref": "common.schema.json#/$defs/problem_id"},
+    "targets": {"type": "array", "minItems": 1, "maxItems": 20, "items": {"$ref": "#/$defs/target"}},
+    "title": {"$ref": "common.schema.json#/$defs/title"},
+    "profiles": {
+      "description": "Research profiles. An unsupported profile marked required fails compatibility explicitly.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version", "required"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*$", "maxLength": 100},
+          "version": {"type": "integer", "minimum": 1},
+          "required": {"type": "boolean"}
+        }
+      }
+    },
+    "claim": {"$ref": "#/$defs/claim"},
+    "attribution": {"$ref": "common.schema.json#/$defs/attribution"},
+    "model_uses": {"type": "array", "maxItems": 20, "items": {"$ref": "common.schema.json#/$defs/model_use"}},
+    "lineage": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/lineage"}},
+    "artifacts": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/artifact_declaration"}},
+    "rights": {"$ref": "common.schema.json#/$defs/rights"},
+    "declarations": {"$ref": "#/$defs/declarations"},
+    "review": {"$ref": "#/$defs/review"},
+    "extensions": {"$ref": "common.schema.json#/$defs/extensions"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"type": {"enum": ["review", "author_response"]}}, "required": ["type"]},
+      "then": {"required": ["review"], "not": {"required": ["claim"]}},
+      "else": {"not": {"required": ["review"]}}
+    },
+    {
+      "if": {"properties": {"type": {"enum": ["attempt", "counterexample"]}}, "required": ["type"]},
+      "then": {"required": ["claim"]}
+    }
+  ],
+  "$defs": {
+    "target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target_kind", "problem_id", "statement_revision_id", "scope"],
+          "properties": {
+            "target_kind": {"const": "problem"},
+            "problem_id": {"$ref": "common.schema.json#/$defs/problem_id"},
+            "statement_revision_id": {"$ref": "common.schema.json#/$defs/statement_revision_id"},
+            "scope": {"enum": ["whole_statement", "part_of_statement", "special_case", "related_question"]},
+            "scope_note": {"$ref": "common.schema.json#/$defs/short_text"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target_kind", "contribution_id", "revision_id"],
+          "properties": {
+            "target_kind": {"const": "contribution_revision"},
+            "contribution_id": {"$ref": "common.schema.json#/$defs/contribution_id"},
+            "revision_id": {"$ref": "common.schema.json#/$defs/revision_id"},
+            "claim_ref": {"$ref": "common.schema.json#/$defs/short_text"},
+            "location": {"$ref": "common.schema.json#/$defs/short_text"}
+          }
+        }
+      ]
+    },
+    "claim": {
+      "description": "The author's claim. The platform never rewrites or downgrades it; it asks.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "scope_statement", "assumptions", "limitations"],
+      "properties": {
+        "type": {
+          "enum": [
+            "full_solution", "full_disproof", "partial_result", "conditional_result",
+            "computational_evidence", "literature_report", "exploration"
+          ]
+        },
+        "scope_statement": {"$ref": "common.schema.json#/$defs/long_text"},
+        "assumptions": {"type": "array", "maxItems": 50, "items": {"$ref": "common.schema.json#/$defs/long_text"}},
+        "limitations": {"type": "array", "maxItems": 50, "items": {"$ref": "common.schema.json#/$defs/long_text"}},
+        "completion_estimate": {
+          "description": "Optional contributor-reported estimate. Never mandatory, never a confidence or correctness score.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["percent", "justification"],
+          "properties": {
+            "percent": {"type": "integer", "minimum": 0, "maximum": 100},
+            "justification": {"$ref": "common.schema.json#/$defs/long_text"}
+          }
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relation", "contribution_id", "revision_id", "lineage_status"],
+      "properties": {
+        "relation": {"enum": ["derivative_of", "extends", "responds_to", "possible_revision_of", "reuses"]},
+        "contribution_id": {"$ref": "common.schema.json#/$defs/contribution_id"},
+        "revision_id": {"anyOf": [{"$ref": "common.schema.json#/$defs/revision_id"}, {"type": "null"}]},
+        "lineage_status": {"enum": ["known", "unknown"]},
+        "note": {"$ref": "common.schema.json#/$defs/short_text"}
+      },
+      "allOf": [
+        {
+          "description": "A derivative links to the exact source revision.",
+          "if": {"properties": {"relation": {"const": "derivative_of"}}, "required": ["relation"]},
+          "then": {"properties": {"revision_id": {"$ref": "common.schema.json#/$defs/revision_id"}}}
+        }
+      ]
+    },
+    "artifact_declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "location"],
+      "properties": {
+        "artifact_id": {"$ref": "common.schema.json#/$defs/artifact_id"},
+        "role": {
+          "enum": [
+            "manuscript", "manuscript_source", "bibliography", "figure", "data", "supplementary", "transcript",
+            "formal_proof", "code", "notebook", "model", "dataset"
+          ]
+        },
+        "location": {"enum": ["in_repository", "external_pinned"]},
+        "path": {
+          "type": "string",
+          "maxLength": 255,
+          "pattern": "^files/[A-Za-z0-9_][A-Za-z0-9._-]*(/[A-Za-z0-9_][A-Za-z0-9._-]*)*$"
+        },
+        "media_type": {"type": "string", "pattern": "^[a-z]+/[a-z0-9.+-]+$", "maxLength": 100},
+        "external": {"$ref": "common.schema.json#/$defs/external_link"},
+        "description": {"$ref": "common.schema.json#/$defs/short_text"},
+        "rights": {"$ref": "common.schema.json#/$defs/rights"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"location": {"const": "in_repository"}}, "required": ["location"]},
+          "then": {"required": ["path", "media_type"], "not": {"required": ["external"]}}
+        },
+        {
+          "if": {"properties": {"location": {"const": "external_pinned"}}, "required": ["location"]},
+          "then": {"required": ["external"], "not": {"required": ["path"]}}
+        },
+        {
+          "description": "Executable and large artifacts are linked, never hosted (§10).",
+          "if": {
+            "properties": {"role": {"enum": ["formal_proof", "code", "notebook", "model", "dataset"]}},
+            "required": ["role"]
+          },
+          "then": {"properties": {"location": {"const": "external_pinned"}}}
+        }
+      ]
+    },
+    "declarations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rights", "public_disclosure", "ai_disclosure"],
+      "properties": {
+        "rights": {"$ref": "common.schema.json#/$defs/declaration"},
+        "public_disclosure": {"$ref": "common.schema.json#/$defs/declaration"},
+        "ai_disclosure": {"$ref": "common.schema.json#/$defs/declaration"},
+        "conflicts_of_interest": {"$ref": "common.schema.json#/$defs/short_text"}
+      }
+    },
+    "review": {
+      "description": "Review-specific fields; required only for review-like types.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["finding", "checked_scope", "evidence", "conflicts_of_interest"],
+      "properties": {
+        "finding": {
+          "enum": [
+            "supports", "error_found", "gap_found", "counterexample", "known_result", "reproduced",
+            "not_reproduced", "reference_suggestion", "comment"
+          ]
+        },
+        "checked_scope": {"$ref": "common.schema.json#/$defs/long_text"},
+        "location": {"$ref": "common.schema.json#/$defs/short_text"},
+        "evidence": {"$ref": "common.schema.json#/$defs/long_text"},
+        "conflicts_of_interest": {"$ref": "common.schema.json#/$defs/short_text"},
+        "responds_to": {"$ref": "common.schema.json#/$defs/contribution_revision_ref"},
+        "retracts": {"$ref": "common.schema.json#/$defs/contribution_revision_ref"}
+      }
+    }
+  }
+}

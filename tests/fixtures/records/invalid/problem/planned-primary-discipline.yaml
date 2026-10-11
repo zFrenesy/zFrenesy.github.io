@@ -1,0 +1,41 @@
+# expect: problem.discipline_not_open
+schema_version: 1
+problem_id: prb_35305d0327194e23845f398914e422e0
+statement_revision_id: stm_285a7fe663ec488681f1032cf8e3ae79
+expected_statement_predecessor: null
+title: Synthetic catalogued problem
+kind: catalogued
+disciplines:
+- discipline: biology
+  role: primary
+topics:
+- number-theory
+classifications:
+- scheme: msc2020
+  code: 11B05
+statement_artifact:
+  path: statement.md
+external_ids:
+- scheme: erdosproblems
+  identifier: "5"
+  authority: erdosproblems.com
+  url: https://www.erdosproblems.com/5
+sources:
+- authority: erdosproblems.com
+  source_url: https://www.erdosproblems.com/5
+  raw_status: open
+  normalised_status: open
+  snapshot:
+    kind: git_commit
+    repository_url: https://github.com/teorth/erdosproblems
+    commit: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    path: data/problems.yaml
+  observed_at:
+    value: '2026-09-23T17:22:24Z'
+    precision: instant
+  provenance:
+    recorded_by: catalogue_sync
+relations: []
+rights:
+  licence: LicenseRef-erdosproblems-terms
+  redistribution: link_only

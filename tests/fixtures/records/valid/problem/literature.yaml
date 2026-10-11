@@ -1,0 +1,53 @@
+schema_version: 1
+problem_id: prb_513573fa8f584633a18944338e0c133d
+statement_revision_id: stm_9f7460026cba4093b983e5770de5077d
+expected_statement_predecessor: null
+title: Synthetic literature problem in game theory
+kind: literature
+disciplines:
+- discipline: economics
+  role: primary
+- discipline: mathematics
+  role: secondary
+classifications:
+- scheme: jel
+  code: C73
+- scheme: msc2020
+  code: 91A15
+statement_artifact:
+  path: statement.tex
+external_ids: []
+sources: []
+relations:
+- type: related
+  target_problem_id: prb_35305d0327194e23845f398914e422e0
+rights:
+  licence: CC-BY-4.0
+  redistribution: permitted
+attribution:
+  submitter:
+    person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  humans:
+  - person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  organisations: []
+  contribution_mode: human_only
+model_uses: []
+citation:
+  reference:
+    kind: arxiv
+    value: 2401.01234v2
+  locator: Open problem 3, Section 5

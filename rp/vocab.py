@@ -127,6 +127,10 @@ ARTIFACT_ROLES = (
 )
 # Executable and large artifacts are linked, never hosted (§10).
 LINK_ONLY_ARTIFACT_ROLES = frozenset({"formal_proof", "code", "notebook", "model", "dataset"})
+# Roles only the platform assigns (renderer outputs and packages).
+PLATFORM_ARTIFACT_ROLES = ("rendering", "package")
+RECORD_ARTIFACT_ROLES = ARTIFACT_ROLES + PLATFORM_ARTIFACT_ROLES
+ARTIFACT_AVAILABILITY = ("available", "unavailable", "withdrawn", "tombstoned")
 ARTIFACT_LOCATIONS = ("in_repository", "release_asset", "external_pinned")
 PIN_KINDS = ("git_commit", "hf_revision", "zenodo_doi", "swhid")
 
@@ -142,3 +146,34 @@ NORMALISED_SOURCE_STATUSES = (
 )
 
 DISCIPLINE_STATUSES = ("planned", "pilot", "active")
+# Statuses that accept new problems and contributions; planned disciplines go on hold (§14).
+OPEN_DISCIPLINE_STATUSES = frozenset({"pilot", "active"})
+
+# Ledger event types defined in schema version 1 (docs/adr/0006). Each has a payload
+# schema in event.schema.json; later milestones add types with their payloads.
+EVENT_TYPES = (
+    "alias_reserved",
+    "alias_bound",
+    "alias_abandoned",
+    "external_id_mapped",
+    "statement_revised",
+    "contribution_submitted",
+    "revision_accepted",
+    "revision_merged",
+    "date_declared",
+    "activity_recorded",
+    "snapshot_built",
+    "snapshot_activated",
+)
+# Where an event's occurred_at came from.
+TIME_SOURCES = (
+    "system_clock",
+    "github_api",
+    "git_committer_date",
+    "git_author_date",
+    "contributor_declaration",
+    "legacy_header",
+    "catalogue_source",
+)
+ACTOR_KINDS = ("person", "app", "system", "legacy_import")
+DECLARED_DATE_KINDS = ("first_posted", "generation", "activity")

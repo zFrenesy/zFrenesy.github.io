@@ -1,0 +1,31 @@
+schema_version: 1
+snapshot_id: pub_e1fb858584674586979f50f039d6a964
+selected:
+  contribution_revisions:
+  - contribution_id: con_2dff41b5d25f4e75bea0d51d3d2e73a6
+    revision_id: rev_dd21f133a679421aa5940eaef39f5db1
+  statement_revisions:
+  - problem_id: prb_35305d0327194e23845f398914e422e0
+    statement_revision_id: stm_285a7fe663ec488681f1032cf8e3ae79
+ledger_checkpoint:
+  ref: refs/heads/automation-ledger
+  commit: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+software:
+  platform_commit: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  policy_version: policy/1
+  rubric_version: rubric/1
+  renderers:
+  - name: pandoc
+    version: "3.5"
+packages:
+- revision_id: rev_dd21f133a679421aa5940eaef39f5db1
+  manifest_digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+  assets:
+  - name: source.zip
+    digest: sha256:2222222222222222222222222222222222222222222222222222222222222222
+    bytes: 4096
+site_artifact_digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+exclusions:
+- entity_id: con_cc3f6f36b6c24d08940729b75016da71
+  reason: rights_unclear
+built_at: '2026-10-05T00:00:00Z'

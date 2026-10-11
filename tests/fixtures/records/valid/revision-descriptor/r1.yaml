@@ -1,0 +1,44 @@
+schema_version: 1
+revision_id: rev_dd21f133a679421aa5940eaef39f5db1
+contribution_id: con_2dff41b5d25f4e75bea0d51d3d2e73a6
+predecessor: null
+sequence_label: r1
+scientific_fingerprint: sha256:1111111111111111111111111111111111111111111111111111111111111111
+scientific_metadata_digest: sha256:2222222222222222222222222222222222222222222222222222222222222222
+artifact_manifest:
+- location: in_repository
+  logical_path: files/attempt.tex
+  digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+  bytes: 2048
+  mode: "100644"
+- location: in_repository
+  logical_path: files/refs.bib
+  digest: sha256:2222222222222222222222222222222222222222222222222222222222222222
+  bytes: 300
+  mode: "100644"
+- location: external_pinned
+  url: https://github.com/example/search-code
+  pin:
+    kind: git_commit
+    value: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+target_statement_revisions:
+- problem_id: prb_35305d0327194e23845f398914e422e0
+  statement_revision_id: stm_285a7fe663ec488681f1032cf8e3ae79
+intake_refs:
+- kind: issue
+  repository: we-solve/research
+  number: 12
+candidate_head_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+merged_source_commit: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+policy_version: policy/1
+rubric_version: rubric/1
+review_context_digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+authorised_actor:
+  person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+  github_id: 100001
+  login_at_event: contributor-a
+  editor_state_digest: sha256:2222222222222222222222222222222222222222222222222222222222222222
+linked_events:
+- evt_adfc335aeebb42f196399bd1ba73a94d
+- evt_2b302224153743efa0f6f275ffcfd2cb
+recorded_at: '2026-10-04T08:00:00Z'

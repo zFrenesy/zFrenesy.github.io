@@ -1,0 +1,63 @@
+# expect: schema.required
+schema_version: 1
+contribution_id: con_c0470b9e06de4bf39ce97a18e175e297
+revision_id: rev_db91e544a0584c85868bded0c8bcfdee
+expected_predecessor: null
+type: review
+home_problem_id: prb_35305d0327194e23845f398914e422e0
+targets:
+- target_kind: contribution_revision
+  contribution_id: con_2dff41b5d25f4e75bea0d51d3d2e73a6
+  revision_id: rev_dd21f133a679421aa5940eaef39f5db1
+  location: Lemma 2
+title: Gap in Lemma 2
+profiles:
+- id: review
+  version: 1
+  required: true
+attribution:
+  submitter:
+    person_ref: per_fbcac9df54b745d1bde881805c231a71
+    github_id: 100002
+    login_at_event: contributor-b
+    display_name: Contributor B
+    roles:
+    - submission
+    - validation
+    authorship_confirmation: confirmed
+  humans:
+  - person_ref: per_fbcac9df54b745d1bde881805c231a71
+    github_id: 100002
+    login_at_event: contributor-b
+    display_name: Contributor B
+    roles:
+    - validation
+    authorship_confirmation: confirmed
+  organisations: []
+  contribution_mode: human_only
+model_uses: []
+lineage: []
+artifacts:
+- role: manuscript
+  location: in_repository
+  path: files/review.md
+  media_type: text/markdown
+rights:
+  licence: CC-BY-4.0
+  redistribution: permitted
+declarations:
+  rights:
+    confirmed: true
+    source: form_field
+    actor: per_fbcac9df54b745d1bde881805c231a71
+    recorded_at: '2026-10-02T10:00:00Z'
+  public_disclosure:
+    confirmed: true
+    source: form_field
+    actor: per_fbcac9df54b745d1bde881805c231a71
+    recorded_at: '2026-10-02T10:00:00Z'
+  ai_disclosure:
+    confirmed: true
+    source: form_field
+    actor: per_fbcac9df54b745d1bde881805c231a71
+    recorded_at: '2026-10-02T10:00:00Z'

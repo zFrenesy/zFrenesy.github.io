@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/publication-snapshot.schema.json",
+  "title": "Publication snapshot (ledger)",
+  "description": "Fixes everything a deployment publishes. Activation is a separate event: a snapshot never carries a deployment or publication time (§4).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "snapshot_id", "selected", "ledger_checkpoint", "software", "packages",
+    "site_artifact_digest", "exclusions", "built_at"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "snapshot_id": {"$ref": "common.schema.json#/$defs/publication_snapshot_id"},
+    "selected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contribution_revisions", "statement_revisions"],
+      "properties": {
+        "contribution_revisions": {"type": "array", "items": {"$ref": "common.schema.json#/$defs/contribution_revision_ref"}},
+        "statement_revisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["problem_id", "statement_revision_id"],
+            "properties": {
+              "problem_id": {"$ref": "common.schema.json#/$defs/problem_id"},
+              "statement_revision_id": {"$ref": "common.schema.json#/$defs/statement_revision_id"}
+            }
+          }
+        }
+      }
+    },
+    "ledger_checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "commit"],
+      "properties": {
+        "ref": {"type": "string", "pattern": "^refs/heads/[A-Za-z0-9._/-]+$"},
+        "commit": {"$ref": "common.schema.json#/$defs/git_sha"}
+      }
+    },
+    "software": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform_commit", "policy_version", "rubric_version", "renderers"],
+      "properties": {
+        "platform_commit": {"$ref": "common.schema.json#/$defs/git_sha"},
+        "policy_version": {"$ref": "common.schema.json#/$defs/policy_version"},
+        "rubric_version": {"$ref": "common.schema.json#/$defs/rubric_version"},
+        "renderers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "version"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1, "maxLength": 100},
+              "version": {"type": "string", "minLength": 1, "maxLength": 100},
+              "image_digest": {"$ref": "common.schema.json#/$defs/digest"}
+            }
+          }
+        }
+      }
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["revision_id", "manifest_digest", "assets"],
+        "properties": {
+          "revision_id": {"$ref": "common.schema.json#/$defs/revision_id"},
+          "manifest_digest": {"$ref": "common.schema.json#/$defs/digest"},
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "digest", "bytes"],
+              "properties": {
+                "name": {"type": "string", "minLength": 1, "maxLength": 255},
+                "digest": {"$ref": "common.schema.json#/$defs/digest"},
+                "bytes": {"type": "integer", "minimum": 0}
+              }
+            }
+          }
+        }
+      }
+    },
+    "site_artifact_digest": {"$ref": "common.schema.json#/$defs/digest"},
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entity_id", "reason"],
+        "properties": {
+          "entity_id": {"$ref": "common.schema.json#/$defs/entity_id"},
+          "reason": {"enum": ["withdrawn", "takedown", "rights_unclear", "external_unavailable", "packaging_failed", "other"]},
+          "note": {"$ref": "common.schema.json#/$defs/short_text"}
+        }
+      }
+    },
+    "built_at": {"$ref": "common.schema.json#/$defs/utc_instant"}
+  }
+}

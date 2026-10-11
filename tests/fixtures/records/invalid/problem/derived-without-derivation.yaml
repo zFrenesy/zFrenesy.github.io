@@ -1,0 +1,48 @@
+# expect: schema.required
+schema_version: 1
+problem_id: prb_15e2003d7839442c88d89d40d7b16049
+statement_revision_id: stm_e2a7b75430a141d790b656ae3387dd45
+expected_statement_predecessor: null
+title: Synthetic special case of the catalogued problem
+kind: derived
+disciplines:
+- discipline: mathematics
+  role: primary
+- discipline: mathematical-physics
+  role: secondary
+classifications:
+- scheme: msc2020
+  code: 11B05
+statement_artifact:
+  path: statement.md
+external_ids: []
+sources: []
+relations:
+- type: subproblem_of
+  target_problem_id: prb_35305d0327194e23845f398914e422e0
+  primary: true
+rights:
+  licence: CC-BY-4.0
+  redistribution: permitted
+attribution:
+  submitter:
+    person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  humans:
+  - person_ref: per_f20ee1063dba47a0b48a60da0a9c7f28
+    github_id: 100001
+    login_at_event: contributor-a
+    display_name: Contributor A
+    roles:
+    - submission
+    - investigation
+    authorship_confirmation: confirmed
+  organisations: []
+  contribution_mode: human_only
+model_uses: []

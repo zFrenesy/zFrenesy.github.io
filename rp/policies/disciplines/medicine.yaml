@@ -1,0 +1,20 @@
+schema_version: 1
+slug: medicine
+name: Medicine
+alias_prefix: MED
+status: planned
+usable_as_secondary: false
+hold_reason: >-
+  Needs a named steward, ethics fields (approvals, data provenance) and a biosafety and
+  clinical-claims screening category before launch (§14). Submissions go on hold.
+classification: null
+profiles:
+  - review
+accepted_formats:
+  stored: [tex, bib, md, pdf, png, jpeg, csv, json, txt]
+  linked: [code, notebook, dataset]
+rubric_addendum: >-
+  Clinical directives, personal data and dual-use content are out of scope until the clinical-claims
+  screening category exists.
+disclaimer: Not peer reviewed; not medical advice.
+stewards: []

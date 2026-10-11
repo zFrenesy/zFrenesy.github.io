@@ -1,0 +1,8 @@
+schema_version: 1
+id: computational_experiment
+version: 1
+title: Computational experiment
+applies_to: [attempt, counterexample, correction, replication, legacy_record]
+description: >-
+  A report of computations or experiments. Code, notebooks and large data are linked with pins and
+  never run by the platform; small non-executable CSV or JSON results may be stored.

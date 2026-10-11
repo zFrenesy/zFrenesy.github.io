@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://we-solve.github.io/schemas/v1/event.schema.json",
+  "title": "Ledger event",
+  "description": "Append-only ledger event. Submitted, accepted, merged, published, revised, activity and claimed dates are separate events (§4, docs/adr/0006).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "event_id", "type", "actor", "targets", "occurred_at", "recorded_at", "time_source",
+    "evidence", "policy_version", "idempotency_key", "payload"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "event_id": {"$ref": "common.schema.json#/$defs/event_id"},
+    "type": {
+      "enum": [
+        "alias_reserved", "alias_bound", "alias_abandoned", "external_id_mapped", "statement_revised",
+        "contribution_submitted", "revision_accepted", "revision_merged", "date_declared", "activity_recorded",
+        "snapshot_built", "snapshot_activated"
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["person", "app", "system", "legacy_import"]},
+        "person_ref": {"$ref": "common.schema.json#/$defs/person_id"},
+        "github_id": {"$ref": "common.schema.json#/$defs/github_id"},
+        "login": {"$ref": "common.schema.json#/$defs/github_login"},
+        "app_slug": {"$ref": "common.schema.json#/$defs/slug"}
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "person"}}, "required": ["kind"]}, "then": {"required": ["person_ref"]}},
+        {"if": {"properties": {"kind": {"const": "app"}}, "required": ["kind"]}, "then": {"required": ["app_slug"]}}
+      ]
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {"$ref": "common.schema.json#/$defs/entity_id"}
+    },
+    "occurred_at": {"$ref": "common.schema.json#/$defs/date_claim"},
+    "recorded_at": {"$ref": "common.schema.json#/$defs/utc_instant"},
+    "time_source": {
+      "enum": [
+        "system_clock", "github_api", "git_committer_date", "git_author_date", "contributor_declaration",
+        "legacy_header", "catalogue_source"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "ref"],
+        "properties": {
+          "kind": {"enum": ["github_api", "git_commit", "issue", "pull_request", "workflow_run", "legacy_file", "url", "ledger"]},
+          "ref": {"$ref": "common.schema.json#/$defs/short_text"},
+          "url": {"$ref": "common.schema.json#/$defs/https_url"},
+          "digest": {"$ref": "common.schema.json#/$defs/digest"}
+        }
+      }
+    },
+    "policy_version": {"$ref": "common.schema.json#/$defs/policy_version"},
+    "idempotency_key": {"$ref": "common.schema.json#/$defs/digest"},
+    "payload": {"type": "object"}
+  },
+  "allOf": [
+    {"if": {"properties": {"type": {"const": "alias_reserved"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/alias_reserved"}}}},
+    {"if": {"properties": {"type": {"const": "alias_bound"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/alias_bound"}}}},
+    {"if": {"properties": {"type": {"const": "alias_abandoned"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/alias_abandoned"}}}},
+    {"if": {"properties": {"type": {"const": "external_id_mapped"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/external_id_mapped"}}}},
+    {"if": {"properties": {"type": {"const": "statement_revised"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/statement_revised"}}}},
+    {"if": {"properties": {"type": {"const": "contribution_submitted"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/contribution_submitted"}}}},
+    {"if": {"properties": {"type": {"const": "revision_accepted"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/revision_accepted"}}}},
+    {"if": {"properties": {"type": {"const": "revision_merged"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/revision_merged"}}}},
+    {"if": {"properties": {"type": {"const": "date_declared"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/date_declared"}}}},
+    {"if": {"properties": {"type": {"const": "activity_recorded"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/activity_recorded"}}}},
+    {"if": {"properties": {"type": {"const": "snapshot_built"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/snapshot_built"}}}},
+    {"if": {"properties": {"type": {"const": "snapshot_activated"}}, "required": ["type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/snapshot_activated"}}}}
+  ],
+  "$defs": {
+    "alias": {"type": "string", "pattern": "^[A-Z][A-Z0-9]{1,9}-[A-Z0-9][A-Z0-9.-]{0,80}$"},
+    "alias_reserved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alias", "entity_id", "scheme_id", "allocation_authority", "parent_alias", "counter_key", "sequence",
+        "external_identifier"
+      ],
+      "properties": {
+        "alias": {"$ref": "#/$defs/alias"},
+        "entity_id": {"anyOf": [{"$ref": "common.schema.json#/$defs/problem_id"}, {"$ref": "common.schema.json#/$defs/contribution_id"}]},
+        "scheme_id": {"type": "string", "pattern": "^[a-z0-9:-]{1,64}$"},
+        "allocation_authority": {"type": "string", "minLength": 1, "maxLength": 100},
+        "parent_alias": {"anyOf": [{"$ref": "#/$defs/alias"}, {"type": "null"}]},
+        "counter_key": {"anyOf": [{"type": "string", "pattern": "^(top|sub|con):[A-Z0-9.:-]{1,120}$"}, {"type": "null"}]},
+        "sequence": {"anyOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]},
+        "external_identifier": {"anyOf": [{"type": "string", "minLength": 1, "maxLength": 128}, {"type": "null"}]}
+      }
+    },
+    "alias_bound": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alias", "entity_id"],
+      "properties": {
+        "alias": {"$ref": "#/$defs/alias"},
+        "entity_id": {"$ref": "common.schema.json#/$defs/entity_id"}
+      }
+    },
+    "alias_abandoned": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alias", "entity_id", "reason"],
+      "properties": {
+        "alias": {"$ref": "#/$defs/alias"},
+        "entity_id": {"$ref": "common.schema.json#/$defs/entity_id"},
+        "reason": {"enum": ["candidate_closed", "candidate_rejected", "withdrawn_before_merge", "duplicate_reservation", "other"]}
+      }
+    },
+    "external_id_mapped": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_id", "scheme", "identifier", "authority"],
+      "properties": {
+        "entity_id": {"$ref": "common.schema.json#/$defs/entity_id"},
+        "scheme": {"$ref": "common.schema.json#/$defs/slug"},
+        "identifier": {"type": "string", "minLength": 1, "maxLength": 128},
+        "authority": {"$ref": "common.schema.json#/$defs/short_text"}
+      }
+    },
+    "statement_revised": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["problem_id", "statement_revision_id", "predecessor"],
+      "properties": {
+        "problem_id": {"$ref": "common.schema.json#/$defs/problem_id"},
+        "statement_revision_id": {"$ref": "common.schema.json#/$defs/statement_revision_id"},
+        "predecessor": {"anyOf": [{"$ref": "common.schema.json#/$defs/statement_revision_id"}, {"type": "null"}]}
+      }
+    },
+    "contribution_submitted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contribution_id", "revision_id", "intake_ref"],
+      "properties": {
+        "contribution_id": {"$ref": "common.schema.json#/$defs/contribution_id"},
+        "revision_id": {"$ref": "common.schema.json#/$defs/revision_id"},
+        "intake_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "repository"],
+          "properties": {
+            "kind": {"enum": ["issue", "pull_request", "fork_pull_request", "cli_submission", "legacy_import"]},
+            "repository": {"$ref": "common.schema.json#/$defs/repository"},
+            "number": {"type": "integer", "minimum": 1},
+            "path": {"type": "string", "minLength": 1, "maxLength": 500}
+          }
+        }
+      }
+    },
+    "revision_accepted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contribution_id", "revision_id", "predecessor", "sequence_label", "scientific_fingerprint",
+        "authorization_binding"
+      ],
+      "properties": {
+        "contribution_id": {"$ref": "common.schema.json#/$defs/contribution_id"},
+        "revision_id": {"$ref": "common.schema.json#/$defs/revision_id"},
+        "predecessor": {"anyOf": [{"$ref": "common.schema.json#/$defs/revision_id"}, {"type": "null"}]},
+        "sequence_label": {"type": "string", "pattern": "^r[1-9][0-9]*$"},
+        "scientific_fingerprint": {"$ref": "common.schema.json#/$defs/digest"},
+        "authorization_binding": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "revision_merged": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contribution_id", "revision_id", "repository", "pull_request", "merged_source_commit"],
+      "properties": {
+        "contribution_id": {"$ref": "common.schema.json#/$defs/contribution_id"},
+        "revision_id": {"$ref": "common.schema.json#/$defs/revision_id"},
+        "repository": {"$ref": "common.schema.json#/$defs/repository"},
+        "pull_request": {"type": "integer", "minimum": 1},
+        "merged_source_commit": {"$ref": "common.schema.json#/$defs/git_sha"}
+      }
+    },
+    "date_declared": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject_id", "kind", "claim"],
+      "properties": {
+        "subject_id": {"$ref": "common.schema.json#/$defs/entity_id"},
+        "kind": {"enum": ["first_posted", "generation", "activity"]},
+        "claim": {"$ref": "common.schema.json#/$defs/date_claim"},
+        "source_text": {"$ref": "common.schema.json#/$defs/short_text"}
+      }
+    },
+    "activity_recorded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject_id", "activity"],
+      "properties": {
+        "subject_id": {"$ref": "common.schema.json#/$defs/entity_id"},
+        "activity": {"enum": ["comment", "review_submitted", "author_response", "form_reply"]}
+      }
+    },
+    "snapshot_built": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot_id", "snapshot_digest"],
+      "properties": {
+        "snapshot_id": {"$ref": "common.schema.json#/$defs/publication_snapshot_id"},
+        "snapshot_digest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "snapshot_activated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot_id", "previous_snapshot_id", "deployment"],
+      "properties": {
+        "snapshot_id": {"$ref": "common.schema.json#/$defs/publication_snapshot_id"},
+        "previous_snapshot_id": {"anyOf": [{"$ref": "common.schema.json#/$defs/publication_snapshot_id"}, {"type": "null"}]},
+        "deployment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "run_id"],
+          "properties": {
+            "repository": {"$ref": "common.schema.json#/$defs/repository"},
+            "run_id": {"type": "integer", "minimum": 1},
+            "page_url": {"$ref": "common.schema.json#/$defs/https_url"}
+          }
+        }
+      }
+    }
+  }
+}

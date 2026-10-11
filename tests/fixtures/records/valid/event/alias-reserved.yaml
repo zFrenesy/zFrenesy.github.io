@@ -1,0 +1,25 @@
+schema_version: 1
+event_id: evt_add73b8a16d9408990f083bda0aef096
+type: alias_reserved
+actor:
+  kind: app
+  app_slug: we-solve-publisher
+targets:
+- prb_35305d0327194e23845f398914e422e0
+occurred_at:
+  value: '2026-10-03T12:00:00Z'
+  precision: instant
+recorded_at: '2026-10-03T12:00:00Z'
+time_source: system_clock
+evidence: []
+policy_version: policy/1
+idempotency_key: sha256:1111111111111111111111111111111111111111111111111111111111111111
+payload:
+  alias: ERDOS-5
+  entity_id: prb_35305d0327194e23845f398914e422e0
+  scheme_id: erdos
+  allocation_authority: erdosproblems.com
+  parent_alias: null
+  counter_key: null
+  sequence: null
+  external_identifier: "5"
