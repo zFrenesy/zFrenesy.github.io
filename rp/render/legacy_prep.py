@@ -306,3 +306,123 @@ def economics_attempt_body(content, path):
     body = replace_tex_command(body, 'addcontentsline', 3, lambda *args: '')
     body = expand_tex_notation(body, tex_notation_macros(preamble, {}))
     return body
+
+
+# Legacy status heuristics, copied unchanged. The migration records their output as the
+# historical (retired) value only; it never becomes a claim or a status (docs/adr/0010).
+
+def extract_completion(content):
+    """Extract completion estimate percentage from TeX content.
+
+    Looks for 'COMPLETION ESTIMATE' and scans that line plus the next 3 lines.
+    If multiple blocks are present, the latest block with a valid value wins.
+    Returns a float percentage (0-100) or None.
+    """
+    lines = content.splitlines()
+    last_value = None
+    confidence_re = re.compile(r'\bconfiden\w*\b', re.IGNORECASE)
+
+    def is_confidence_context(text, start, end, window=80):
+        left = max(0, start - window)
+        right = min(len(text), end + window)
+        return confidence_re.search(text[left:right]) is not None
+
+    def is_rejected_value(text, start, end):
+        # Reviews may quote a completion claim only to reject it. Match the
+        # rejection next to that value, without discarding a corrected estimate.
+        formatting = r'\\[A-Za-z]+\*?|[{}\'"`“”‘’$]'
+        before = re.sub(formatting, '', text[:start])
+        after = re.sub(formatting, '', text[end:])
+        return (
+            re.search(r'\b(?:not|rather than)\s*$', before, re.IGNORECASE)
+            or re.match(
+                r'\s*(?:(?:is|was|would be)\s+)?'
+                r'(?:false|incorrect|invalid|wrong|rejected|unsupported|unjustified)\b',
+                after, re.IGNORECASE,
+            )
+        )
+
+    for idx, line in enumerate(lines):
+        if not re.search(r'COMPLETION\s*(?:RATE\s*)?ESTIMATE', line, re.IGNORECASE):
+            continue
+
+        window = lines[idx:idx + 4]
+        window_text = "\n".join(window)
+
+        # Prefer explicit percentages.
+        local_values = []
+        for match in re.finditer(r'(\d+(?:\.\d+)?)\s*\\?%', window_text):
+            if is_confidence_context(window_text, match.start(), match.end()):
+                continue
+            if is_rejected_value(window_text, match.start(), match.end()):
+                continue
+            try:
+                local_values.append(float(match.group(1)))
+            except ValueError:
+                continue
+
+        if local_values:
+            last_value = local_values[-1]
+            continue
+
+        # Fallback: decimal fraction (e.g., 0.10) -> convert to percent.
+        for match in re.finditer(r'\b0?\.\d+\b', window_text):
+            if re.match(r'\s*\\?%', window_text[match.end():]):
+                continue
+            if is_confidence_context(window_text, match.start(), match.end()):
+                continue
+            if is_rejected_value(window_text, match.start(), match.end()):
+                continue
+            try:
+                decimal_value = float(match.group(0))
+            except ValueError:
+                continue
+            if decimal_value <= 1:
+                last_value = decimal_value * 100
+
+    return last_value
+
+
+def declared_attempt_status(content):
+    """Read the optional shared status marker, rejecting ambiguous declarations."""
+    values = re.findall(r'^[ \t]*%[ \t]*ATTEMPT_STATUS:[ \t]*([^\r\n]*)',
+                        content, re.MULTILINE | re.IGNORECASE)
+    statuses = set()
+    for value in values:
+        value = value.strip().lower()
+        if value not in {'solved', 'unresolved', 'partial'}:
+            raise ValueError(f'Invalid ATTEMPT_STATUS: {value!r}')
+        statuses.add('unresolved' if value == 'partial' else value)
+    if len(statuses) > 1:
+        raise ValueError('Conflicting ATTEMPT_STATUS declarations')
+    return next(iter(statuses), None)
+
+
+def infer_attempt_status(content):
+    """Keep explicit partial submissions out of the legacy solved fallback.
+
+    This extracts author claims, not mathematical correctness. Recognize status
+    headings and standalone partial labels without interpreting ordinary prose
+    about partial sums/results as a declaration that a full proof is incomplete.
+    """
+    declared = declared_attempt_status(content)
+    if declared:
+        return declared
+    if re.search(r'\bunresolved\b|\bremains\s+open\b', content, re.IGNORECASE):
+        return 'unresolved'
+    labels = re.sub(r'\\(?:textbf|textit|emph|section|subsection|paragraph|noindent)\*?',
+                    '', content)
+    labels = re.sub(r'[{}*]', '', labels)
+    if re.search(r'^[ \t]*OUTCOME\s*:\s*(?:CONDITIONAL\s+REDUCTION|'
+                 r'COUNTEREXAMPLE\s+CANDIDATE|(?:NEW\s+)?PARTIAL\s+RESULT)\b',
+                 labels, re.MULTILINE | re.IGNORECASE):
+        return 'unresolved'
+    partial = re.search(
+        r'^[ \t]*(?:\d+[.)][ \t]*)?'
+        r'(?:(?:FINAL[ \t]+)?(?:STATUS|LABEL)[ \t]*:?[ \t]*)?'
+        r'PARTIAL(?:[ \t]*(?:[.:;/()—–-]|$)|'
+        r'[ \t]+(?:formalization|progress|solution|results?|proof)\b)',
+        labels, re.MULTILINE | re.IGNORECASE,
+    )
+    return 'unresolved' if partial else 'solved'
+
