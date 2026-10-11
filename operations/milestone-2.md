@@ -81,8 +81,8 @@ first, and skip already satisfied settings. The creation commands below are
 for missing resources: repeated POSTs can create duplicate branch policies.
 Do not print `gh auth token` or commit it to a file.
 
-The already checked organisation settings are 2FA required and base permission
-read. Member repository creation still needs to be disabled:
+The desired organisation settings are 2FA required and base permission read.
+Disable member repository creation if it is not already disabled:
 
 ```sh
 gh api --method PATCH orgs/we-solve-staging \
@@ -176,8 +176,9 @@ gh api --method POST repos/we-solve-staging/we-solve-staging.github.io/environme
 
 Publish the reviewed platform `main` to the staging platform repo. Only source
 and trusted workflow files belong on this branch; generated HTML, caches and
-ZIPs stay outside it. Its push builds an artifact but does not deploy it.
-Once `main` exists, finish Pages configuration:
+ZIPs stay outside it. Its push runs the ordinary tests in `ci.yml`; it does not
+build or upload a Pages artifact. A manual `pages.yml` dispatch performs the
+full Pages build and deployment. Once `main` exists, configure Pages if needed:
 
 ```sh
 gh api --method PATCH repos/we-solve-staging/we-solve-staging.github.io -f default_branch=main
@@ -192,12 +193,13 @@ milestone 4 task.
 
 ## Verify and publish
 
-Update `operations/expected-settings.yaml` and its recorded test response with
-all seven action pins and the platform `pages: [main]` environment before
-verification. The verifier must continue to reject unexpected extra allowlist
-entries. The current verifier checks environment restrictions; if it does not
-yet check Pages configuration, read `/pages` separately and require
-`build_type` to be `workflow`.
+`operations/expected-settings.yaml` already records all seven action pins,
+the platform's `pages: [main]` environment and Pages `build_type: workflow`.
+The verifier checks those values, including the exact action allowlist and
+environment branch restrictions; unexpected extra allowlist entries fail.
+The `/pages` read below also displays the hosting URL and current deployment
+status. All 28 configured checks passed on 2026-10-11; rerun them before a
+publication or after changing settings to detect drift.
 
 ```sh
 GITHUB_TOKEN="$(gh auth token)" python -m rp.ops.verify_settings --org we-solve-staging
@@ -208,7 +210,8 @@ Every verifier check must pass. An unreadable field is not a pass. If the
 owner's login cannot read organisation state, ask the owner to refresh the
 required scope; do not alter authentication scopes silently.
 
-After the local and push-triggered builds pass, publish the reviewed pair:
+After local checks and the push-triggered code tests pass, dispatch the full
+build and publication for the reviewed research/ledger pair:
 
 ```sh
 gh workflow run pages.yml --repo we-solve-staging/we-solve-staging.github.io --ref main \
