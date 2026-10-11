@@ -67,7 +67,6 @@ RECORD_TYPES = {
     "platform": "platform.schema.json",
     "classification": "classification.schema.json",
 }
-AUTHORED_TYPES = frozenset({"problem", "contribution"})
 FILENAME_TYPES = {"problem.yaml": "problem", "contribution.yaml": "contribution"}
 MAX_MESSAGE = 300
 
@@ -405,7 +404,7 @@ def _snapshot_issues(snapshot: Mapping) -> list[Issue]:
 
 
 def _semantic_issues(record_type: str, data: Any, catalog: Catalog | None) -> list[Issue]:
-    issues = _text_issues(data) if record_type in AUTHORED_TYPES else []
+    issues = _text_issues(data)
     if record_type == "problem":
         issues += _problem_issues(data, catalog)
     elif record_type == "contribution":

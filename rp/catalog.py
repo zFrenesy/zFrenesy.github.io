@@ -40,7 +40,7 @@ def _yaml_files(directory: Traversable) -> list[Traversable]:
 def _load(entry: Traversable, record_type: str, problems: list[str]) -> dict[str, Any] | None:
     try:
         data = strict_yaml.load(entry.read_bytes())
-    except StrictYamlError as exc:
+    except (StrictYamlError, OSError) as exc:
         problems.append(f"{entry.name}: {exc}")
         return None
     issues = [i for i in validate_record(record_type, data, catalog=None) if i.severity == "error"]
@@ -90,7 +90,7 @@ class Catalog:
                 profiles[(data["id"], data["version"])] = data
 
         if platform is None or namespaces is None:
-            raise CatalogError(problems or ["platform.yaml or alias-namespaces.yaml is missing"])
+            raise CatalogError(problems)
 
         profile_ids = {pid for pid, _ in profiles}
         prefixes: dict[str, str] = {}

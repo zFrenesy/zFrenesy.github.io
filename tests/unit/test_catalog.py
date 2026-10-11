@@ -132,3 +132,9 @@ def test_unsafe_yaml_in_policy_is_rejected(policies):
     path.write_text(path.read_text().replace("usable_as_secondary: true", "usable_as_secondary: yes"))
     with pytest.raises(CatalogError, match="yaml.ambiguous_scalar"):
         Catalog.load(policies)
+
+
+def test_missing_policy_file_is_a_catalog_error(policies):
+    (policies / "alias-namespaces.yaml").unlink()
+    with pytest.raises(CatalogError, match="alias-namespaces.yaml"):
+        Catalog.load(policies)

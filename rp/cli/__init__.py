@@ -16,7 +16,8 @@ from pathlib import Path
 from rp.catalog import default_catalog
 from rp.fingerprint import ManifestError, manifest_from_directory, scientific_fingerprint, scientific_metadata_digest
 from rp.identity.ids import KIND_PREFIXES, new_id
-from rp.validation.records import RECORD_TYPES, load_record, validate_file, validate_record
+from rp.strict_yaml import StrictYamlError
+from rp.validation.records import RECORD_TYPES, RecordLoadError, load_record, validate_file, validate_record
 
 RECORD_SUFFIXES = (".yaml", ".yml", ".json")
 
@@ -51,7 +52,11 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 def cmd_fingerprint(args: argparse.Namespace) -> int:
     folder = Path(args.directory)
-    contribution = load_record(folder / "contribution.yaml")
+    try:
+        contribution = load_record(folder / "contribution.yaml")
+    except (StrictYamlError, RecordLoadError, OSError) as exc:
+        print(exc, file=sys.stderr)
+        return 1
     errors = [i for i in validate_record("contribution", contribution, catalog=default_catalog()) if i.severity == "error"]
     if errors:
         for issue in errors:

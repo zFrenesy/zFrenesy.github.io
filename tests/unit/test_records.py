@@ -132,3 +132,9 @@ def test_errors_are_reported_together_with_pointers():
         ("schema.minLength", "/title"),
         ("schema.minimum", "/claim/completion_estimate/percent"),
     }
+
+
+def test_text_checks_apply_to_ledger_records_too():
+    event = strict_yaml.load((FIXTURES / "event" / "date-declared.yaml").read_bytes())
+    event["payload"]["source_text"] = "FIRST_POSTED: 2026-10-09" + chr(0x202E)
+    assert "text.bidi_control" in {i.code for i in validate_record("event", event, catalog=None)}

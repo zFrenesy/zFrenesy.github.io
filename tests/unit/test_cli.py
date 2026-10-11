@@ -56,3 +56,10 @@ def test_fingerprint_refuses_undeclared_files_and_symlinks(capsys, tmp_path):
 def test_id_new(capsys):
     assert main(["id", "new", "person"]) == 0
     assert is_id(capsys.readouterr().out.strip(), "person")
+
+
+def test_fingerprint_reports_bad_yaml_without_a_traceback(capsys, tmp_path):
+    assert main(["fingerprint", str(tmp_path)]) == 1
+    (tmp_path / "contribution.yaml").write_text("title: yes\n")
+    assert main(["fingerprint", str(tmp_path)]) == 1
+    assert "yaml.ambiguous_scalar" in capsys.readouterr().err
