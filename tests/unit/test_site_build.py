@@ -60,6 +60,30 @@ def read_route(built, route: str) -> str:
     return (built["out"] / route.lstrip("/") / "index.html").read_text()
 
 
+def test_comments_share_latest_revision_but_not_different_contributions(built):
+    contributions = list(built['model'].contributions.values())
+    keys = []
+    for c in contributions[:2]:
+        key = f'data-term="we-solve:{c.alias}:{c.revision_label}"'
+        keys.append(key)
+        for route in (c.url, c.revision_url):
+            page = read_route(built, route)
+            assert key in page
+            assert 'data-repo="we-solve-staging/research"' in page
+            assert 'assets/comments.js' in page
+            assert 'src="https://giscus.app' not in page
+    assert keys[0] != keys[1]
+
+
+def test_problem_links_keep_original_authority_and_named_catalogues(built):
+    erdos = read_route(built, '/problems/ERDOS-5/')
+    assert 'https://www.erdosproblems.com/5' in erdos
+    assert 'Tao’s database' in erdos and 'https://teorth.github.io/erdosproblems/' in erdos
+    top = read_route(built, '/problems/TOP-10/')
+    assert '<dt>UnsolvedMath</dt>' in top
+    assert 'https://www.unsolvedmath.com/problems/OWR-010' in top
+
+
 def test_site_build_has_all_records_and_local_search(built):
     report, out = built["report"], built["out"]
     assert report["problems"] == 8
@@ -206,7 +230,7 @@ def test_reviews_reused_text_and_human_attribution_remain_distinct(built):
     assert "gpt pro 5.2" in read_route(built, reused.revision_url)
     human = next(c for c in contributions if c.cls == "human_contribution")
     page = read_route(built, human.revision_url)
-    assert "Human + AI" in page
+    assert "Human + LLM" in page
     assert "listed by submitter" in page
     assert "Submitted by" in page
     assert len([c for c in contributions if c.is_review]) == 2

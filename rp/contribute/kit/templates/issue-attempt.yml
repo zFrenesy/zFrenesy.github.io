@@ -50,16 +50,16 @@ body:
     attributes:
       label: Who did the work
       options:
-        - People with AI assistance
-        - AI only (people only prompted or submitted)
+        - People with LLM assistance
+        - LLM only (people only prompted or submitted)
         - People only
     validations:
       required: true
   - type: textarea
     id: models
     attributes:
-      label: AI models used
-      description: "One per line: provider, model name, exact version or 'unknown', and its role (for example: draft, proof search, computation, editing). Write 'none' if no AI was used."
+      label: LLMs used
+      description: "One per line: provider, model name, exact version or 'unknown', and its role (for example: draft, proof search, computation, editing). Write 'none' if no LLM was used."
       placeholder: "OpenAI, GPT-5, unknown, generated the draft"
     validations:
       required: true
@@ -84,5 +84,5 @@ body:
           required: true
         - label: I understand that this issue and its contents are public immediately.
           required: true
-        - label: Every AI model and person involved is listed, with versions or "unknown".
+        - label: Every LLM and person involved is listed, with versions or "unknown".
           required: true

@@ -152,15 +152,15 @@ class _Builder:
     def model_uses(self, mode: str | None) -> list[dict[str, Any]] | None:
         models, unparsed, none = forms.parse_models(self.value("models"))
         if unparsed:
-            self.ask("models", "Which AI models were used? One per line: provider, model name, exact version or “unknown”, role.",
+            self.ask("models", "Which LLMs were used? One per line: provider, model name, exact version or “unknown”, role.",
                      None)
             return None
         if not models and not none:
-            self.ask("models", "Which AI models were used? One per line: provider, model name, version or “unknown”, role. Reply “none” if no AI was used.",
+            self.ask("models", "Which LLMs were used? One per line: provider, model name, version or “unknown”, role. Reply “none” if no LLM was used.",
                      None if mode in ("ai_only", "human_ai") else "none")
             return None
         if none and mode in ("ai_only", "human_ai"):
-            self.ask("models", "The form says AI was involved but lists no model. Which models were used (version may be “unknown”)?")
+            self.ask("models", "The form says LLM was involved but lists no model. Which models were used (version may be “unknown”)?")
             return None
         return [{"provider": m.provider[:100], "declared_name": m.name[:200], "family": None, "version": m.version[:200], "role": m.role,
                  "settings": None, "generation_date": None, "provenance": {"level": "declared", "evidence": []}} for m in models]
@@ -223,7 +223,7 @@ def _attempt(builder: _Builder, confirmations: dict[str, int], fetch) -> tuple[s
         builder.ask("scope", "What exactly is proved, disproved or found, under which assumptions, and what remains open?")
     mode = forms.contribution_mode(builder.value("mode"))
     if mode is None:
-        builder.ask("mode", "Who did the work: “people with AI assistance”, “AI only” or “people only”?", "People with AI assistance")
+        builder.ask("mode", "Who did the work: “people with LLM assistance”, “LLM only” or “people only”?", "People with LLM assistance")
     writeup = builder.value("writeup")
     attachments = fetch_attachments("\n".join(filter(None, [writeup, builder.snapshot.body])), fetch)
     if not writeup and not attachments.files:

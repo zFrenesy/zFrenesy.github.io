@@ -168,7 +168,7 @@ class Research:
         folder = self.root / contribution_dir(problem["id"], record["contribution_id"], "attempt")
         (folder / "files").mkdir(parents=True)
         (folder / "contribution.yaml").write_text(
-            "# Fill in every TODO. Remove the model entry if no AI was used and set contribution_mode: human_only.\n"
+            "# Fill in every TODO. Remove the model entry if no LLM was used and set contribution_mode: human_only.\n"
             "# Claim types: full_solution, full_disproof, partial_result, conditional_result, computational_evidence,\n"
             "# literature_report, exploration. Model version stays \"unknown\" unless you know it exactly.\n"
             + strict_yaml.dump(record), encoding="utf-8")
@@ -224,7 +224,7 @@ class Research:
         (folder / "files").mkdir(parents=True)
         (folder / "contribution.yaml").write_text(
             "# Findings: supports, error_found, gap_found, counterexample, known_result, reproduced, not_reproduced,\n"
-            "# reference_suggestion, comment. If an AI assisted, add a model_uses entry and set contribution_mode: human_ai.\n"
+            "# reference_suggestion, comment. If an LLM assisted, add a model_uses entry and set contribution_mode: human_ai.\n"
             + strict_yaml.dump(record), encoding="utf-8")
         (folder / "files" / "review.md").write_text(f"# Review of {target['alias']}\n\nTODO: what you checked, where, and what you found.\n", encoding="utf-8")
         return folder

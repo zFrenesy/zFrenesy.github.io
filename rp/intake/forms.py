@@ -26,6 +26,8 @@ FORM_KINDS = {"attempt": "issue-attempt.yml", "review": "issue-review.yml", "pro
 NO_RESPONSE = "_No response_"
 
 MODE_CHOICES = {
+    "People with LLM assistance": "human_ai",
+    "LLM only (people only prompted or submitted)": "ai_only",
     "People with AI assistance": "human_ai",
     "AI only (people only prompted or submitted)": "ai_only",
     "People only": "human_only",
@@ -66,7 +68,12 @@ _SEPARATOR = re.compile(r"\s*(?::|—|–|\s-\s)\s*")
 def _labels(kind: str) -> dict[str, tuple[str, str]]:
     """label -> (field id, field type) for one form."""
     form = yaml.safe_load((TEMPLATES / FORM_KINDS[kind]).read_text(encoding="utf-8"))
-    return {item["attributes"]["label"]: (item["id"], item["type"]) for item in form["body"] if item.get("id")}
+    labels = {item["attributes"]["label"]: (item["id"], item["type"]) for item in form["body"] if item.get("id")}
+    # Existing submitted forms remain readable after the interface terminology change.
+    for label, field in list(labels.items()):
+        if label == "LLMs used":
+            labels["AI models used"] = field
+    return labels
 
 
 @functools.cache
@@ -119,7 +126,9 @@ def parse_form(body: str, kind: str) -> FormIntake:
             for line in text.splitlines():
                 found = re.match(r"^- \[([ xX])\] (.+?)\s*$", line)
                 if found:
-                    result.declarations[found.group(2)] = found.group(1) in "xX"
+                    label = found.group(2)
+                    label = label.replace("Every AI model and person", "Every LLM and person")
+                    result.declarations[label] = found.group(1) in "xX"
             continue
         value = text.strip()
         result.fields[key] = None if value in ("", NO_RESPONSE) else value

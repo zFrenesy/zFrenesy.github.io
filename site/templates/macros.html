@@ -1,6 +1,18 @@
 {% macro badge(text, tone='neutral') -%}<span class="badge badge-{{ tone }}">{{ text|replace('_', ' ') }}</span>{%- endmacro %}
 
-{% macro mode_label(mode) -%}{{ {'ai_only': 'AI-generated', 'human_ai': 'Human + AI', 'human_only': 'Human', 'unknown': 'Attribution unknown'}.get(mode, mode) }}{%- endmacro %}
+{% macro comments(key) %}
+{% if site.comments %}<section class="comments" id="comments" aria-labelledby="comments-title" data-pagefind-ignore data-comments data-repo="{{ site.comments.repo }}" data-repo-id="{{ site.comments.repo_id }}" data-category="{{ site.comments.category }}" data-category-id="{{ site.comments.category_id }}" data-term="we-solve:{{ key }}">
+  <h2 id="comments-title">Comments</h2>
+  <p class="small muted">Discuss this {{ 'revision' if ':' in key else 'problem' }}. Sign in with GitHub to comment.</p>
+  <button type="button" class="button" data-load-comments hidden>Load comments</button>
+  <p class="small" data-comments-status role="status"></p>
+  <div class="giscus"></div>
+  <p class="small"><a data-discussion-link href="https://github.com/{{ site.comments.repo }}/discussions?discussions_q={{ ('we-solve:' ~ key)|urlencode }}" rel="noopener noreferrer">View discussion on GitHub</a></p>
+  <noscript><p>Use the GitHub discussion link to read and leave comments.</p></noscript>
+</section>{% endif %}
+{% endmacro %}
+
+{% macro mode_label(mode) -%}{{ {'ai_only': 'LLM-generated', 'human_ai': 'Human + LLM', 'human_only': 'Human', 'unknown': 'Attribution unknown'}.get(mode, mode) }}{%- endmacro %}
 
 {% macro person_link(person) -%}
   {% if person_url is defined and person.get('person_ref') %}<a href="{{ url(person_url(person)) }}" data-pagefind-filter="Person">{{ person.display_name|default(person.login_at_event, true) }}</a>{% elif person.url|default('') %}<a href="{{ url(person.url) }}">{{ person.display_name|default(person.login_at_event, true) }}</a>{% elif person.login_at_event|default('') %}<a href="{{ url('/people/' ~ person.login_at_event ~ '/') }}">{{ person.display_name|default(person.login_at_event, true) }}</a>{% else %}<span>{{ person.display_name|default('Unrecorded person', true) }}</span>{% endif %}

@@ -3,7 +3,7 @@
 Uses the contributor's ``git`` identity (so commit authorship is theirs) and their
 ``gh`` login. Every command is an argument list, never a shell string, and
 ``--dry-run`` prints exactly what would run. Legal declarations (rights, public
-disclosure, AI disclosure) are confirmed only by a person at an interactive
+disclosure, LLM disclosure) are confirmed only by a person at an interactive
 terminal; an agent's ``--yes`` never confirms them on the person's behalf.
 """
 
@@ -25,7 +25,7 @@ __all__ = ["SubmitPlan", "plan_submission", "submit"]
 DECLARATION_QUESTIONS = {
     "rights": "I have the right to publish this material under CC BY 4.0 (software: Apache-2.0), and third-party material is credited.",
     "public_disclosure": "I understand that the pull request and its contents are public immediately.",
-    "ai_disclosure": "Every AI model and person involved is listed, with versions or 'unknown'.",
+    "ai_disclosure": "Every LLM and person involved is listed, with versions or 'unknown'.",
 }
 
 

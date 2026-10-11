@@ -47,8 +47,8 @@ body:
   - type: textarea
     id: models
     attributes:
-      label: AI models used
-      description: "One per line: provider, model name, exact version or 'unknown', and its role. Write 'none' if no AI was used."
+      label: LLMs used
+      description: "One per line: provider, model name, exact version or 'unknown', and its role. Write 'none' if no LLM was used."
     validations:
       required: true
   - type: textarea
@@ -65,5 +65,5 @@ body:
           required: true
         - label: I understand that this issue and its contents are public immediately.
           required: true
-        - label: Every AI model and person involved is listed, with versions or "unknown".
+        - label: Every LLM and person involved is listed, with versions or "unknown".
           required: true

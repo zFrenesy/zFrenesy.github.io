@@ -100,6 +100,11 @@ def test_form_parsing_and_detection():
     assert intake.get("problem") == "TOP-10" and intake.get("references") is None and intake.all_declarations_ticked
     assert forms.claim_type(intake.get("claim")) == "partial_result"
     assert forms.contribution_mode(intake.get("mode")) == "human_ai"
+    legacy_body = body.replace("LLMs used", "AI models used").replace("Every LLM and person", "Every AI model and person")
+    legacy = forms.parse_form(legacy_body, "attempt")
+    assert legacy.get("models") == intake.get("models") and legacy.all_declarations_ticked
+    assert forms.contribution_mode("People with LLM assistance") == "human_ai"
+    assert forms.contribution_mode("LLM only (people only prompted or submitted)") == "ai_only"
     assert not forms.parse_form(render_form("attempt", ATTEMPT, ticks=False), "attempt").all_declarations_ticked
     assert forms.detect_kind("Hello, I solved it!") is None
     models, unparsed, none = forms.parse_models("OpenAI, GPT-5\n???")

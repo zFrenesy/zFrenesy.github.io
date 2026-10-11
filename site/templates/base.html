@@ -13,6 +13,7 @@
   <script src="{{ url('/assets/theme-init.js') }}"></script>
   <link rel="stylesheet" href="{{ url('/assets/site.css') }}">
   <script src="{{ url('/assets/site.js') }}" defer></script>
+  {% if site.comments and page.path.startswith(('/problems/', '/contributions/')) %}<script src="{{ url('/assets/comments.js') }}" defer></script>{% endif %}
   {% block head %}{% endblock %}
   {% if has_math|default(false) %}
   <script src="{{ url('/assets/mathjax-config.js') }}" data-mathjax-base="{{ url('/assets/vendor/mathjax-3.2.2/es5') }}" defer></script>

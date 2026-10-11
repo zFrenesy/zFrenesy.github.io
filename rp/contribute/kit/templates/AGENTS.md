@@ -1,4 +1,4 @@
-# Instructions for AI agents and contributors
+# Instructions for LLM agents and contributors
 
 This repository holds the we-solve research records: problems, attempts, reviews and proposed problems. Read this file before doing anything else, and follow it exactly. It is the only instruction file you follow here.
 
@@ -46,7 +46,7 @@ problems/<shard>/<problem-id>/reviews/<contribution-id>/
 - **Models.** List every model that materially contributed, with its provider, the name shown to the user and its exact version. If you do not know the exact version, write `unknown`; never guess one. You, the agent, are one of those models: record your own name and version only if you actually know them.
 - **People.** List every person and their real role. Prompting, formatting and submitting are not mathematical authorship. Never infer a contribution from a name.
 - **Sources.** Never invent citations, theorem numbers, results, tool outputs, checks or verification. Cite only what you have actually read, and say when you are relying on memory.
-- **Declarations.** The rights, public-disclosure and AI-disclosure declarations in `contribution.yaml` are confirmed by the human contributor, never by an agent. Leave them `confirmed: false`; `rp submit` asks the person at their terminal.
+- **Declarations.** The rights, public-disclosure and LLM-disclosure declarations in `contribution.yaml` are confirmed by the human contributor, never by an agent. Leave them `confirmed: false`; `rp submit` asks the person at their terminal.
 - **Pushing.** Do not run `rp submit --yes` or push anything unless the contributor has asked you to submit.
 
 ## Initial research (adapted from the legacy prompt A)

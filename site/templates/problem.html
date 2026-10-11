@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
-{% from 'macros.html' import status_line, contribution_card, attempt_inline, pager, rights_details, contribute_panel with context %}
+{% from 'macros.html' import status_line, contribution_card, attempt_inline, pager, rights_details, contribute_panel, comments with context %}
 {% block body_attributes %}{% if pagination and pagination.page > 1 %} data-pagefind-ignore="all"{% endif %}{% endblock %}
 {% block content %}
-<article class="reading" data-pagefind-body>
+<article class="record-page" data-pagefind-body>
+<div class="record-main">
 <header class="page-heading">
   <p class="row-meta"><span class="identifier" data-pagefind-meta="alias">{{ problem.alias }}</span>{% for discipline in problem.disciplines %} · <span data-pagefind-filter="Discipline">{{ discipline|replace('-', ' ') }}</span>{% endfor %}{% if problem.record.get('topics') %}{% for topic in problem.record.topics %} · <span data-pagefind-filter="Topic">{{ topic|replace('-', ' ') }}</span>{% endfor %}{% endif %}</p>
   <h1 data-pagefind-meta="title">{{ problem.record.title }}</h1>
@@ -17,6 +18,9 @@
   <div class="collapsible" data-collapsible data-more="Show full statement" data-less="Show less">
     <div class="tex-content mathjax-process" id="statement" data-payload-exclude>{{ rendered_statement_html|default(problem.rendered.html if problem.rendered else '', true)|safe }}</div>
   </div>
+  {% set excerpt = problem.record.get('extensions', {}).get('org.we-solve.erdos-statement') %}
+  {% if excerpt %}<p class="small muted">Restatement from <a href="{{ url('/contributions/' ~ excerpt.alias ~ '/' ~ excerpt.revision_label ~ '/') }}">{{ excerpt.alias }} {{ excerpt.revision_label }}</a>, with the source manuscript’s qualifications.</p>{% endif %}
+  {% if problem.collection == 'erdos' %}<p class="small"><a href="https://www.erdosproblems.com/{{ problem.alias.removeprefix('ERDOS-') }}" rel="noopener noreferrer">Original problem on erdosproblems.com</a></p>{% elif problem.source_status and problem.source_status.get('source_url') %}<p class="small"><a href="{{ problem.source_status.source_url }}" rel="noopener noreferrer">Original problem source</a></p>{% endif %}
   <p class="small muted">Statement licence: {{ license_label|default(problem.record.rights.licence, true) }}{% if statement_source_url|default('') %} · <a href="{{ url(statement_source_url) }}" download>Source file</a>{% endif %}{% if source_url|default('') %} · <a href="{{ source_url }}" rel="noopener noreferrer">Source folder</a>{% endif %}</p>
 </section>
 
@@ -26,18 +30,22 @@
   <h2 id="contributions-title">Contributions <span class="count">{{ problem.attempts|length }}</span></h2>
   {% if featured|default([]) %}{% for item in featured %}{{ attempt_inline(item) }}{% endfor %}{% endif %}
   {% if contributions|default([]) %}{% if featured|default([]) %}<h3 class="list-heading">Earlier contributions</h3>{% endif %}<ul class="rows">{% for item in contributions %}{{ contribution_card(item) }}{% endfor %}</ul>{{ pager(pagination|default({})) }}{% endif %}
-  {% if not problem.attempts %}<p class="muted">No attempts yet. A partial result, a useful reduction or a careful exploration all count. <a href="#contribute">Contribute below.</a></p>{% endif %}
+  {% if not problem.attempts %}<p class="muted">No attempts yet. A partial result, a useful reduction or a careful exploration all count. <a href="#contribute">Contribute an attempt.</a></p>{% endif %}
 </section>
 
 {% if reviews|default([]) %}<section aria-labelledby="problem-reviews-title" data-pagefind-ignore><h2 id="problem-reviews-title">Reviews <span class="count">{{ problem.reviews|length }}</span></h2>{% if problem.reviews|selectattr('legacy')|list %}<p class="small muted">Historical problem-level reviews keep their original scope; they do not assess every contribution.</p>{% endif %}<ul class="rows">{% for item in reviews %}{{ contribution_card(item) }}{% endfor %}</ul>{% if problem.reviews|length > reviews|length %}<p><a href="{{ url(problem.url ~ 'reviews/') }}">All {{ problem.reviews|length }} reviews</a></p>{% endif %}</section>{% endif %}
 
 {% if related|default([]) %}<section aria-labelledby="related-title"><h2 id="related-title">Related questions</h2><ul class="rows">{% for item in related %}<li class="row"><a class="row-title" href="{{ url(item.url) }}">{{ item.label }}</a><span class="row-meta">{{ item.relation|default('related')|replace('_', ' ') }}</span></li>{% endfor %}</ul></section>{% endif %}
 
+{{ comments(problem.alias) }}
+</div>
+<aside class="record-sidebar" aria-label="Contribute and problem details" data-pagefind-ignore>
 {% if contribute|default({}) %}{{ contribute_panel(contribute, open_first=false) }}{% endif %}
 
-<details class="record-details" data-pagefind-ignore><summary>Record details</summary>
-  <dl class="metadata"><dt>Identifier</dt><dd>{{ problem.alias }}</dd><dt>Collection</dt><dd>{{ problem.source[1] }}</dd>{% if problem.source_status %}<dt>Source status</dt><dd>{% if problem.source_status.get('source_url') %}<a href="{{ problem.source_status.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ problem.source_status.authority }}</a>{% else %}{{ problem.source_status.authority }}{% endif %}: {{ problem.source_status.raw_status }} (observed {{ problem.source_status.observed_at.value }}). Claims here do not change the source status.</dd>{% endif %}{% for ext in problem.record.external_ids %}<dt>{{ ext.scheme|replace('-', ' ') }}</dt><dd>{% if ext.get('url') %}<a href="{{ ext.url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ ext.identifier }}</a>{% else %}{{ ext.identifier }}{% endif %}</dd>{% endfor %}{% for code in problem.record.classifications %}<dt>{{ code.scheme|upper }}</dt><dd>{{ code.code }}</dd>{% endfor %}{% for event in history|default([]) %}<dt>{{ event.label }}</dt><dd>{{ event.value }}</dd>{% endfor %}</dl>
+<details class="record-details" open data-pagefind-ignore><summary>Record details</summary>
+  <dl class="metadata"><dt>Identifier</dt><dd>{{ problem.alias }}</dd><dt>Collection</dt><dd>{{ problem.source[1] }}</dd>{% if problem.source_status %}<dt>Source status</dt><dd>{% if problem.source_status.get('source_url') %}<a href="{{ problem.source_status.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ problem.source_status.authority }}</a>{% else %}{{ problem.source_status.authority }}{% endif %}: {{ problem.source_status.raw_status }} (observed {{ problem.source_status.observed_at.value }}). Claims here do not change the source status.</dd>{% endif %}{% for link in catalogue_links %}<dt>{{ link.label }}</dt><dd><a href="{{ link.url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ link.text }}</a></dd>{% endfor %}{% for code in problem.record.classifications %}<dt>{{ code.scheme|upper }}</dt><dd>{{ code.code }}</dd>{% endfor %}{% for event in history|default([]) %}<dt>{{ event.label }}</dt><dd>{{ event.value }}</dd>{% endfor %}</dl>
   {{ rights_details(problem.record.rights) }}
 </details>
+</aside>
 </article>
 {% endblock %}

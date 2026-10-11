@@ -34,6 +34,24 @@ PAGEFIND_VERSION = '1.5.2'
 LOG = logging.getLogger(__name__)
 
 
+def catalogue_links(problem):
+    """Separate catalogue discovery links from authoritative status observations."""
+    if problem.collection == 'erdos':
+        return [dict(label="Tao’s database", text='Erdős Problems Database', url='https://teorth.github.io/erdosproblems/')]
+    links = []
+    for ext in problem.record['external_ids']:
+        if ext['scheme'] in {'legacy-top-open-problems', 'unsolvedmath-code'}:
+            continue
+        if ext['scheme'] == 'unsolvedmath-id':
+            original = next((x.get('url') for x in problem.record['external_ids']
+                             if x['scheme'] == 'unsolvedmath-code' and x.get('url')), None)
+            links.append(dict(label='UnsolvedMath', text='Problem ' + ext['identifier'],
+                              url=original or 'https://www.unsolvedmath.com/'))
+        elif ext.get('url'):
+            links.append(dict(label=ext['scheme'].replace('-', ' '), text=ext['identifier'], url=ext['url']))
+    return links
+
+
 def plain_document(text: str) -> str:
     """Restricted Markdown: headings, paragraphs and safe links; raw HTML is escaped."""
     def inline(value):
@@ -117,7 +135,8 @@ class Builder:
         self.platform_ref = _platform_ref()
         self.site = dict(name='we-solve', base_url=self.base_url, base_path=self.base_path,
                          github_url='https://github.com/' + self.research_repo,
-                         staging=staging, disciplines=self.disciplines)
+                         staging=staging, disciplines=self.disciplines,
+                         comments=json.loads((ROOT / 'site/comments.json').read_text()).get(self.research_repo))
         self.env = Environment(loader=FileSystemLoader(ROOT / 'site/templates'), autoescape=select_autoescape(['html', 'xml']))
         self.env.globals.update(url=self.url)
         self.refs, self.diagnostics, self.packages = {}, [], []
@@ -282,7 +301,7 @@ class Builder:
                             url=self.base_url.rstrip('/') + c.revision_url,
                             authors=authors, institution=None if authors else 'we-solve research archive',
                             date=c.dates.get(date_key), date_label=(date_key or 'No work date recorded').replace('_', ' '),
-                            note='Unverified research record. AI models and submitter roles are disclosed in the record.',
+                            note='Unverified research record. LLMs and submitter roles are disclosed in the record.',
                             licence=c.record['rights']['licence'], contribution_id=c.id, revision_id=c.record['revision_id'])
         text, csl, citation_cff = bibtex(data), csl_json(data), cff(data)
         self.write(c.revision_url + 'citation.bib', text)
@@ -343,6 +362,7 @@ class Builder:
                           breadcrumbs=[dict(label=p.primary_discipline.replace('-', ' ').title(), url='/'+p.primary_discipline+'/'),
                                        dict(label=p.source[1], url='/'+p.primary_discipline+'/sources/'+p.source[0]+'/'), dict(label=p.alias,url='')],
                           pagination=dict(previous=route(n-1) if n>1 else None, next=route(n+1) if n<pages else None, page=n,pages=pages,total=len(contributions)),
+                          catalogue_links=catalogue_links(p),
                           history=[dict(label='Statement revision', value=p.record['statement_revision_id'])])
             if p.reviews:
                 self.listing(p.url + 'reviews/', 'Reviews of ' + p.alias, contributions=p.reviews)
@@ -479,13 +499,13 @@ class Builder:
     def content_pages(self):
         self.contribute_pages()
         pages = {
-            'about': ('About we-solve', 'we-solve is an open workspace and archive of research attempts, many generated or assisted by AI. AI output can contain invalid proofs, invented references and false claims. Automated screening does not establish correctness, novelty or validity. Independent scrutiny, reproduction and peer review remain essential. Useful work should be developed into papers with proper credit and citation.'),
+            'about': ('About we-solve', 'we-solve is an open workspace and archive of research attempts, many generated or assisted by LLMs. LLM output can contain invalid proofs, invented references and false claims. Automated screening does not establish correctness, novelty or validity. Independent scrutiny, reproduction and peer review remain essential. Useful work should be developed into papers with proper credit and citation.'),
             'policies/status': ('Status and evidence', 'Source status, author claim, automated screening, community review, formal checking, publication and lifecycle are separate axes. Claims here do not change the status at a source catalogue. Imported records have not passed platform screening. A full-solution claim is unverified unless independent evidence says otherwise.'),
             'policies/review': ('Review and screening', 'Reviews identify exact revisions and checked scope. Automated screening checks form, honesty and scope; it does not prove correctness. Screening is disabled during staging. Legacy labels and review history are preserved as historical evidence, including removed records.'),
-            'policies/attribution': ('AI attribution and provenance', 'Submitters, human researchers, reviewers, issue authors, labellers and AI models have distinct roles. Unknown versions and provenance are displayed as unknown. A submission or repository folder is not proof of scientific authorship.'),
+            'policies/attribution': ('LLM attribution and provenance', 'Submitters, human researchers, reviewers, issue authors, labellers and LLMs have distinct roles. Unknown versions and provenance are displayed as unknown. A submission or repository folder is not proof of scientific authorship.'),
             'policies/community': ('Community guidelines', 'Be precise, constructive and respectful. Critique arguments with evidence. Give credit, disclose conflicts, and do not post private information, harassment or misleading claims.'),
-            'policies/licences': ('Licences and third-party notices', 'Platform software is Apache-2.0. Imported attempts and site-written summaries use CC-BY-4.0 under the recorded owner declaration. Top Open Problems statements carry their per-record licence; Oberwolfach-derived material retains CC-BY-SA-4.0 attribution. Erdős and MathOverflow statements are linked under their recorded terms. Original papers retain their own rights; summaries do not relicense them. Every record and revision package includes its specific rights metadata.'),
-            'policies/privacy': ('Privacy', 'This static site uses no analytics or third-party embeds. Search and mathematics assets are served locally. GitHub provides hosting and may retain operational access logs. Public contribution metadata and historical GitHub attribution are part of the research record.'),
+            'policies/licences': ('Licences and third-party notices', 'Platform software is Apache-2.0. Imported attempts and statement excerpts use their recorded licences. Erdős pages display attributed restatements from those manuscripts and link to the original problem and Tao’s database. Top Open Problems statements carry their per-record licence; Oberwolfach-derived material retains CC-BY-SA-4.0 attribution. MathOverflow statements remain linked under their recorded terms. Original papers retain their own rights; summaries do not relicense them. Every record and revision package includes its specific rights metadata.'),
+            'policies/privacy': ('Privacy', 'This static site uses no analytics. Search and mathematics assets are served locally. Choosing Load comments connects to giscus.app and GitHub to display GitHub Discussions; posting a comment requires GitHub sign-in. Comments and reactions are public and are moderated on GitHub. GitHub also provides hosting and may retain operational access logs. Public contribution metadata and historical GitHub attribution are part of the research record.'),
             'policies/takedown': ('Corrections and takedown', 'Report inaccurate attribution, rights concerns or private information to the repository maintainers through GitHub. Avoid repeating sensitive details in public issues. Corrections should preserve the historical record where appropriate.'),
         }
         for path,(title,body) in pages.items():

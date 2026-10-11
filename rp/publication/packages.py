@@ -34,7 +34,7 @@ PACKAGE_FORMAT = "rp-package/1"
 FIXED_TIME = (1980, 1, 1, 0, 0, 0)
 DISCLAIMER = (
     "This is an archived research contribution. Publication on we-solve means admission to an attributed archive; "
-    "it does not mean the contribution is correct, novel or peer reviewed. AI-generated text can contain errors, "
+    "it does not mean the contribution is correct, novel or peer reviewed. LLM-generated text can contain errors, "
     "invalid arguments and invented references."
 )
 
