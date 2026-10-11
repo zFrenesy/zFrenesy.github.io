@@ -328,7 +328,7 @@ def test_fork_pr_is_incorporated_with_authorship_unchanged(research, tmp_path):
     publication = gh.find_pull(f"intake/pr-{number}")
     assert publication is not None and publication != number
     carried = git(research.root, "log", "--format=%H %an <%ae> %aI %cn <%ce> %cI", f"intake/pr-{number}", "-1")
-    assert carried == original and "Contributor X <cx@example.org> 2026-10-10T08:00:00+00:00" in carried
+    assert carried == original and "Contributor X <cx@example.org> 2026-10-10T08:00:00" in carried
     source = gh.items[number]
     assert source.state == "closed" and any(f"Incorporated into #{publication}" in c.body for c in source.comments)
     assert "carries your commits unchanged" in next(c.body for c in source.comments if "Incorporated" in c.body)
