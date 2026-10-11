@@ -36,3 +36,7 @@ repositories:
     secret_scanning: enabled
     secret_scanning_push_protection: enabled
     branches: [main, automation-ledger]
+    environments:
+      intake: [main]
+      screening: [main]
+      publisher: [main]

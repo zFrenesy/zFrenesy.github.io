@@ -18,7 +18,7 @@ Python 3.12, JSON Schema 2020-12, Jinja2, Pandoc (restricted profile), MathJax, 
 
 ## Commands (fill in as they are created)
 
-- Environment: a virtualenv outside Google Drive, e.g. `python3 -m venv ~/.venvs/we-solve && ~/.venvs/we-solve/bin/python -m pip install --require-hashes --no-deps -r requirements/dev.lock`
+- Environment: a virtualenv outside Google Drive, e.g. `python3 -m venv ~/.venvs/we-solve && ~/.venvs/we-solve/bin/python -m pip install --require-hashes --no-deps -r requirements/dev.txt`
 - Tests: `python -m pytest`
 - Validate records: `python -m rp validate <file-or-directory>...` (`--type` overrides the inferred record type)
 - Fingerprint a contribution folder: `python -m rp fingerprint <contribution-dir>`

@@ -31,20 +31,97 @@
     "visibility": "public",
     "default_branch": "main",
     "security_and_analysis": {
-      "secret_scanning": {"status": "enabled"},
-      "secret_scanning_push_protection": {"status": "enabled"}
+      "secret_scanning": {
+        "status": "enabled"
+      },
+      "secret_scanning_push_protection": {
+        "status": "enabled"
+      }
     }
   },
-  "/repos/we-solve-staging/we-solve-staging.github.io/branches/main": {"name": "main"},
+  "/repos/we-solve-staging/we-solve-staging.github.io/branches/main": {
+    "name": "main"
+  },
   "/repos/we-solve-staging/research": {
     "full_name": "we-solve-staging/research",
     "visibility": "public",
     "default_branch": "main",
     "security_and_analysis": {
-      "secret_scanning": {"status": "enabled"},
-      "secret_scanning_push_protection": {"status": "enabled"}
+      "secret_scanning": {
+        "status": "enabled"
+      },
+      "secret_scanning_push_protection": {
+        "status": "enabled"
+      }
     }
   },
-  "/repos/we-solve-staging/research/branches/main": {"name": "main"},
-  "/repos/we-solve-staging/research/branches/automation-ledger": {"name": "automation-ledger"}
+  "/repos/we-solve-staging/research/branches/main": {
+    "name": "main"
+  },
+  "/repos/we-solve-staging/research/branches/automation-ledger": {
+    "name": "automation-ledger"
+  },
+  "/repos/we-solve-staging/research/environments/intake": {
+    "name": "intake",
+    "protection_rules": [
+      {
+        "type": "branch_policy"
+      }
+    ],
+    "deployment_branch_policy": {
+      "protected_branches": false,
+      "custom_branch_policies": true
+    }
+  },
+  "/repos/we-solve-staging/research/environments/intake/deployment-branch-policies": {
+    "total_count": 1,
+    "branch_policies": [
+      {
+        "name": "main",
+        "type": "branch"
+      }
+    ]
+  },
+  "/repos/we-solve-staging/research/environments/screening": {
+    "name": "screening",
+    "protection_rules": [
+      {
+        "type": "branch_policy"
+      }
+    ],
+    "deployment_branch_policy": {
+      "protected_branches": false,
+      "custom_branch_policies": true
+    }
+  },
+  "/repos/we-solve-staging/research/environments/screening/deployment-branch-policies": {
+    "total_count": 1,
+    "branch_policies": [
+      {
+        "name": "main",
+        "type": "branch"
+      }
+    ]
+  },
+  "/repos/we-solve-staging/research/environments/publisher": {
+    "name": "publisher",
+    "protection_rules": [
+      {
+        "type": "branch_policy"
+      }
+    ],
+    "deployment_branch_policy": {
+      "protected_branches": false,
+      "custom_branch_policies": true
+    }
+  },
+  "/repos/we-solve-staging/research/environments/publisher/deployment-branch-policies": {
+    "total_count": 1,
+    "branch_policies": [
+      {
+        "name": "main",
+        "type": "branch"
+      }
+    ]
+  }
 }

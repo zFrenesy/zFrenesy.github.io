@@ -114,12 +114,31 @@ def verify(expected: Mapping[str, Any], fetcher: Fetcher, org: str | None = None
     )
     for template, settings in expected["repositories"].items():
         repo = template.format(org=org)
-        fields = {k: v for k, v in settings.items() if k != "branches"}
+        fields = {k: v for k, v in settings.items() if k not in ("branches", "environments")}
         checks += _fields(fetcher, f"/repos/{org}/{repo}", f"repo.{repo}", fields, REPO_FIELDS)
         for branch in settings.get("branches", []):
             status, _ = fetcher.get(f"/repos/{org}/{repo}/branches/{branch}")
             checks.append(Check(f"repo.{repo}.branch.{branch}", status == 200, f"GET returned {status}"))
+        for name, branches in settings.get("environments", {}).items():
+            checks.append(_environment(fetcher, org, repo, name, branches))
     return checks
+
+
+def _environment(fetcher: Fetcher, org: str, repo: str, name: str, branches: list[str]) -> Check:
+    """An environment exists and deploys only from the listed branches (custom branch policies)."""
+    label = f"repo.{repo}.environment.{name}"
+    status, env = fetcher.get(f"/repos/{org}/{repo}/environments/{name}")
+    if status != 200:
+        return Check(label, False, f"GET returned {status}")
+    policy = _dig(env, "deployment_branch_policy")
+    if not isinstance(policy, Mapping) or policy.get("custom_branch_policies") is not True or policy.get("protected_branches") is not False:
+        return Check(label, False, f"deployment branch policy must be custom branch policies, found {policy!r}")
+    status, body = fetcher.get(f"/repos/{org}/{repo}/environments/{name}/deployment-branch-policies")
+    found = _dig(body, "branch_policies") if status == 200 else MISSING
+    if not isinstance(found, list):
+        return Check(label, False, f"branch policies unreadable (GET returned {status})")
+    names = sorted(p.get("name") for p in found if isinstance(p, Mapping) and p.get("type", "branch") == "branch")
+    return Check(label, names == sorted(branches), f"expected deployment branches {sorted(branches)}, found {names}")
 
 
 def main(argv: list[str] | None = None) -> int:

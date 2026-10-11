@@ -31,7 +31,7 @@ def test_recorded_staging_settings_pass():
     fetcher = Recorded(RECORDED)
     checks = verify(EXPECTED, fetcher)
     assert all(c.passed for c in checks), [c for c in checks if not c.passed]
-    assert len(checks) == 23
+    assert len(checks) == 26
     assert all(p.startswith(("/orgs/", "/repos/")) for p in fetcher.paths)
 
 
@@ -74,3 +74,17 @@ def test_http_fetcher_only_fetches_api_paths():
 def test_main_requires_a_token(monkeypatch, capsys):
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     assert main([]) == 2
+
+
+def test_environment_must_be_restricted_to_main():
+    responses = copy.deepcopy(RECORDED)
+    responses["/repos/we-solve-staging/research/environments/publisher"]["deployment_branch_policy"] = None
+    responses["/repos/we-solve-staging/research/environments/screening/deployment-branch-policies"]["branch_policies"].append(
+        {"name": "feature/*", "type": "branch"}
+    )
+    del responses["/repos/we-solve-staging/research/environments/intake"]
+    assert failures(responses) == {
+        "repo.research.environment.publisher",
+        "repo.research.environment.screening",
+        "repo.research.environment.intake",
+    }
