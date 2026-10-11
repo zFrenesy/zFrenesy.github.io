@@ -56,6 +56,10 @@ class LedgerStore(Protocol):
         """Return the head and all events, atomically."""
         ...
 
+    def read_since(self, position: int) -> tuple[str, list[dict[str, Any]]]:
+        """Return the head and the events after the first ``position``, atomically."""
+        ...
+
     def append(self, expected_head: str, events: Sequence[dict[str, Any]]) -> AppendResult: ...
 
 
@@ -71,9 +75,18 @@ class MemoryLedger:
         self._ids: set[str] = set()
         self._head = GENESIS
 
+    def head(self) -> str:
+        with self._lock:
+            return self._head
+
     def read(self) -> tuple[str, list[dict[str, Any]]]:
         with self._lock:
             return self._head, copy.deepcopy(self._events)
+
+    def read_since(self, position: int) -> tuple[str, list[dict[str, Any]]]:
+        """Return the head and the events after the first ``position``, atomically."""
+        with self._lock:
+            return self._head, copy.deepcopy(self._events[position:])
 
     def append(self, expected_head: str, events: Sequence[dict[str, Any]]) -> AppendResult:
         with self._lock:
@@ -124,5 +137,5 @@ class MemoryLedger:
     def from_events(cls, events: Iterable[dict[str, Any]]) -> MemoryLedger:
         ledger = cls()
         for event in events:
-            ledger.append(ledger.read()[0], [event])
+            ledger.append(ledger.head(), [event])
         return ledger

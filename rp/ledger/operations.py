@@ -22,10 +22,12 @@ from rp.timeutil import Clock
 __all__ = [
     "EventContext",
     "LedgerBusy",
+    "StateCache",
     "abandon_alias",
     "accept_revision",
     "append_with_retry",
     "bind_alias",
+    "record_events",
     "reserve_alias",
 ]
 
@@ -34,6 +36,26 @@ DEFAULT_MAX_ATTEMPTS = 200
 
 class LedgerBusy(Exception):
     """Too many consecutive conflicts; the work stays durable-pending and is retried later."""
+
+
+class StateCache:
+    """Incrementally maintained derived state for a single-threaded writer.
+
+    Equivalent to rebuilding from the full log on every attempt, but applies
+    only the events appended since the last refresh.
+    """
+
+    def __init__(self, store: LedgerStore):
+        self._store = store
+        self._position = 0
+        self.state = LedgerState()
+
+    def refresh(self) -> tuple[str, LedgerState]:
+        head, new_events = self._store.read_since(self._position)
+        for event in new_events:
+            self.state.apply(event)
+        self._position += len(new_events)
+        return head, self.state
 
 
 @dataclass(frozen=True)
@@ -50,11 +72,15 @@ def append_with_retry(
     *,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     on_conflict: Callable[[], None] | None = None,
+    cache: StateCache | None = None,
 ) -> tuple[LedgerState, AppendResult]:
     """Read, rebuild, plan and append until the append lands on the head it planned against."""
     for _ in range(max_attempts):
-        head, events = store.read()
-        state = rebuild(events)
+        if cache is not None:
+            head, state = cache.refresh()
+        else:
+            head, events = store.read()
+            state = rebuild(events)
         planned = build(state)
         if not planned:
             return state, AppendResult(head, (), ())
@@ -182,3 +208,9 @@ def accept_revision(
 
     append_with_retry(store, build, **retry)
     return label[0]
+
+
+def record_events(store: LedgerStore, events: list[dict[str, Any]], **retry: Any) -> AppendResult:
+    """Append fully formed events (their idempotency keys make retries safe)."""
+    _, result = append_with_retry(store, lambda state: events, **retry)
+    return result
