@@ -20,7 +20,6 @@ from markupsafe import Markup
 
 from rp import strict_yaml
 from rp.catalog import default_catalog
-from rp.fingerprint import manifest_from_blobs, scientific_fingerprint
 from rp.publication.citation import CitationData, bibtex, cff, csl_json
 from rp.publication.packages import build_package
 from rp.render.tex import Prepared, Rendered, TexRenderer, prepare, renderer_digest, node_version, report as render_report
@@ -283,9 +282,8 @@ class Builder:
         self.write(c.revision_url + 'citation.json', _json(csl))
         self.write(c.revision_url + 'CITATION.cff', citation_cff)
         if self.packages_dir and c.record['rights']['redistribution'] == 'permitted':
-            manifest = manifest_from_blobs({p: (b, '100644') for p, b in c.files.items()}, c.record['artifacts'])
             package = build_package(alias=c.alias, revision_label=c.revision_label, record=c.record, files=c.files,
-                                    scientific_fingerprint=scientific_fingerprint(c.record, manifest), citation=data,
+                                    scientific_fingerprint=c.accepted_fingerprint, citation=data,
                                     provenance={'renderer': renderer_digest(), 'source': c.legacy, 'publication': 'pending'},
                                     notices='Third-party sources retain their original rights. See contribution.yaml for disclosures.')
             self.packages_dir.mkdir(parents=True, exist_ok=True)

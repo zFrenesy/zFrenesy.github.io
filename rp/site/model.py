@@ -49,6 +49,7 @@ class Contribution:
     folder: Path
     files: dict[str, bytes]
     revision_label: str
+    accepted_fingerprint: str
     dates: dict[str, dict[str, Any]] = field(default_factory=dict)
     accepted_at: str | None = None
     problem: Problem | None = None
@@ -259,10 +260,11 @@ def load_model(work: Path) -> SiteModel:
                 raise ValueError(f"contribution source does not match its accepted revision: {cid}")
             revision_label = event["payload"]["sequence_label"]
             files, manifest = _contribution_files(cfolder, crecord["artifacts"])
-            if scientific_fingerprint(crecord, manifest) != event["payload"]["scientific_fingerprint"]:
+            accepted_fingerprint = event["payload"]["scientific_fingerprint"]
+            if scientific_fingerprint(crecord, manifest) != accepted_fingerprint:
                 raise ValueError(f"contribution source differs from its accepted scientific fingerprint: {cid} {revision_label}")
             contribution = Contribution(
-                crecord, calias, cfolder, files, revision_label,
+                crecord, calias, cfolder, files, revision_label, accepted_fingerprint,
                 dates.get(cid, {}), event["recorded_at"], problem,
             )
             problem.contributions.append(contribution)

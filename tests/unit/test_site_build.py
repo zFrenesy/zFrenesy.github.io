@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from rp import strict_yaml
+from rp.fingerprint import manifest_from_directory, scientific_fingerprint
 from rp.identity.ids import SeededIdSource
 from rp.migration.importer import LegacyImporter
 from rp.migration.legacy_git import LegacyRepo
@@ -148,6 +149,36 @@ def test_revision_packages_are_external_to_pages_with_exact_sources(built):
             assert contribution.record["rights"]["licence"] in rights
             assert "Third-party" in rights
             assert "does not mean the contribution is correct" in package.read(name + "/README.md").decode()
+
+
+def test_package_retains_accepted_fingerprint_for_executable_artifact(imported, tmp_path):
+    work = tmp_path / "work"
+    shutil.copytree(imported[0], work)
+    contribution = next(c for c in load_model(work).contributions.values()
+                        if c.files and c.record["rights"]["redistribution"] == "permitted")
+    artifact = contribution.folder / next(iter(contribution.files))
+    artifact.chmod(0o755)
+    manifest = manifest_from_directory(contribution.folder, contribution.record["artifacts"])
+    assert any(entry.get("mode") == "100755" for entry in manifest)
+    accepted = scientific_fingerprint(contribution.record, manifest)
+    assert accepted != contribution.accepted_fingerprint
+    ledger = work / "ledger/events.jsonl"
+    events = [json.loads(line) for line in ledger.read_text().splitlines()]
+    event = next(e for e in events if e["type"] == "revision_accepted"
+                 and e["payload"]["revision_id"] == contribution.record["revision_id"])
+    event["payload"]["scientific_fingerprint"] = accepted
+    ledger.write_text("".join(json.dumps(e) + "\n" for e in events))
+
+    packages = tmp_path / "packages"
+    builder = Builder(work, tmp_path / "site", base_url=BASE_URL,
+                      packages_dir=packages, search=False)
+    assert builder.model.contributions[contribution.id].accepted_fingerprint == accepted
+    builder.run()
+    name = contribution.alias + "-" + contribution.revision_label
+    with zipfile.ZipFile(packages / (name + ".zip")) as package:
+        published = json.loads(package.read(name + "/MANIFEST.json"))
+        assert published["scientific_fingerprint"] == event["payload"]["scientific_fingerprint"]
+        assert package.read(name + "/" + artifact.relative_to(contribution.folder).as_posix()) == artifact.read_bytes()
 
 
 def test_source_status_and_author_claim_remain_independent(built):
