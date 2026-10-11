@@ -31,7 +31,7 @@ def test_recorded_staging_settings_pass():
     fetcher = Recorded(RECORDED)
     checks = verify(EXPECTED, fetcher)
     assert all(c.passed for c in checks), [c for c in checks if not c.passed]
-    assert len(checks) == 26
+    assert len(checks) == 28
     assert all(p.startswith(("/orgs/", "/repos/")) for p in fetcher.paths)
 
 

@@ -1,0 +1,4 @@
+{% extends 'base.html' %}
+{% block content %}
+<article class="prose-page"><header class="page-heading"><p class="eyebrow">{{ eyebrow|default('About the archive') }}</p><h1>{{ heading|default(page.title, true) }}</h1>{% if intro|default('') %}<p class="lede">{{ intro }}</p>{% endif %}</header><div class="prose{% if has_math|default(false) %} tex-content mathjax-process{% endif %}">{{ body_html|default('')|safe }}</div>{% if groups|default([]) %}<nav class="section-block collection-grid" aria-label="Related guides">{% for group in groups %}<a class="collection-link" href="{{ url(group.url) }}"><span>{{ group.title }}</span><span aria-hidden="true">→</span></a>{% endfor %}</nav>{% endif %}</article>
+{% endblock %}

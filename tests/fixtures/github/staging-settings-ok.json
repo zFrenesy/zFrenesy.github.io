@@ -15,9 +15,13 @@
     "github_owned_allowed": false,
     "verified_allowed": false,
     "patterns_allowed": [
-      "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
       "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
-      "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020"
+      "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+      "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
+      "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+      "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9",
+      "actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346",
+      "actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f"
     ]
   },
   "/orgs/we-solve-staging/actions/permissions/workflow": {
@@ -118,6 +122,23 @@
   },
   "/repos/we-solve-staging/research/environments/publisher/deployment-branch-policies": {
     "total_count": 1,
+    "branch_policies": [
+      {
+        "name": "main",
+        "type": "branch"
+      }
+    ]
+  },
+  "/repos/we-solve-staging/we-solve-staging.github.io/pages": {
+    "build_type": "workflow"
+  },
+  "/repos/we-solve-staging/we-solve-staging.github.io/environments/pages": {
+    "deployment_branch_policy": {
+      "custom_branch_policies": true,
+      "protected_branches": false
+    }
+  },
+  "/repos/we-solve-staging/we-solve-staging.github.io/environments/pages/deployment-branch-policies": {
     "branch_policies": [
       {
         "name": "main",

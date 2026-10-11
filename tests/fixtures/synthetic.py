@@ -24,6 +24,7 @@ from typing import Any
 from rp import strict_yaml
 from rp.canonical import canonical_json, digest, sha256_digest
 from rp.catalog import default_catalog
+from rp.fingerprint import manifest_from_blobs, scientific_fingerprint
 from rp.identity.aliases import plan_contribution_alias, plan_counter_alias, plan_external_alias, plan_subproblem_alias
 from rp.identity.ids import SeededIdSource, new_id
 from rp.identity.paths import contribution_dir, problem_dir
@@ -172,14 +173,20 @@ class Generator:
         base = str(problem_dir(pid))
         self.write_yaml(f"{base}/problem.yaml", record)
         self.files[f"{base}/statement.md"] = statement
-        self.record(
-            self.event(
-                "statement_revised",
-                [pid, stm],
-                {"problem_id": pid, "statement_revision_id": stm, "predecessor": None},
-                {"problem_id": pid, "statement_revision_id": stm},
-            )
+        event = self.event(
+            "statement_revised",
+            [pid, stm],
+            {"problem_id": pid, "statement_revision_id": stm, "predecessor": None},
+            {"problem_id": pid, "statement_revision_id": stm},
         )
+        self.record(event)
+        self.files[f"ledger/statement-revisions/{stm}.json"] = canonical_json({
+            "schema_version": 1, "statement_revision_id": stm, "problem_id": pid,
+            "predecessor": None, "change_kind": "initial", "change_note": "Synthetic statement.",
+            "statement_artifact": {"path": "statement.md", "digest": sha256_digest(statement), "bytes": len(statement)},
+            "source_commit": hashlib.sha256(("synthetic/" + stm).encode()).hexdigest()[:40],
+            "recorded_at": event["recorded_at"],
+        }) + b"\n"
         problem = Problem(pid, stm, alias, discipline, record)
         self.problems.append(problem)
         return problem
@@ -294,7 +301,9 @@ class Generator:
 
     def accept(self, contribution_id: str, revision_id: str, predecessor: str | None, record: dict) -> str:
         self.pr_number += 1
-        fingerprint = digest(record)
+        alias = self.cache.refresh()[1].live_alias_of(contribution_id)
+        files = self.artifact_bytes(alias, record)
+        fingerprint = scientific_fingerprint(record, manifest_from_blobs({p: (b, "100644") for p, b in files.items()}, record["artifacts"]))
         label = accept_revision(
             self.store,
             contribution_id=contribution_id,
@@ -445,12 +454,16 @@ class Generator:
             body["extensions"] = extensions
         return body
 
+    @staticmethod
+    def artifact_bytes(alias: str, record: dict) -> dict[str, bytes]:
+        return {a["path"]: f"Synthetic content of {alias} ({a['path']}).\n".encode()
+                for a in record["artifacts"] if a["location"] == "in_repository"}
+
     def write_contribution(self, c: Contribution) -> None:
         base = str(contribution_dir(c.home.problem_id, c.contribution_id, c.record["type"]))
         self.write_yaml(f"{base}/contribution.yaml", c.record)
-        for artifact in c.record["artifacts"]:
-            if artifact["location"] == "in_repository":
-                self.files[f"{base}/{artifact['path']}"] = f"Synthetic content of {c.alias} ({artifact['path']}).\n".encode()
+        for path, content in self.artifact_bytes(c.alias, c.record).items():
+            self.files[f"{base}/{path}"] = content
 
     def build_contributions(self) -> None:
         n_legacy = self.n_attempts // 10

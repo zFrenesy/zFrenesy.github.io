@@ -1,0 +1,4 @@
+{% extends 'base.html' %}
+{% block content %}
+<article class="prose-page"><header class="page-heading"><p class="eyebrow">Archive provenance</p><h1>{{ heading|default(page.title, true) }}</h1>{% if intro|default('') %}<p class="lede">{{ intro }}</p>{% endif %}</header><div class="prose">{{ body_html|default('')|safe }}</div>{% if groups|default([]) %}<ul class="linked-list">{% for group in groups %}<li><a href="{{ url(group.url) }}">{{ group.title }}</a>{% if group.count is defined %}<span>{{ group.count }} records</span>{% endif %}</li>{% endfor %}</ul>{% endif %}</article>
+{% endblock %}

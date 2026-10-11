@@ -1,0 +1,177 @@
+name: staging-pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      research_sha:
+        description: 'Full accepted research main commit (default: STAGING_RESEARCH_SHA variable)'
+        required: false
+        type: string
+      ledger_sha:
+        description: 'Full automation-ledger commit (default: STAGING_LEDGER_SHA variable)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'we-solve-staging/we-solve-staging.github.io' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the trusted platform revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Select immutable data revisions
+        id: pins
+        env:
+          RESEARCH_SHA: ${{ inputs.research_sha || vars.STAGING_RESEARCH_SHA }}
+          LEDGER_SHA: ${{ inputs.ledger_sha || vars.STAGING_LEDGER_SHA }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RESEARCH_SHA" =~ ^[0-9a-f]{40}$ || ! "$LEDGER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'Set full research and ledger commit SHAs in the dispatch inputs or staging repository variables.' >&2
+            exit 1
+          fi
+          printf 'research_sha=%s\nledger_sha=%s\n' "$RESEARCH_SHA" "$LEDGER_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Check out accepted research data
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: we-solve-staging/research
+          ref: ${{ steps.pins.outputs.research_sha }}
+          path: work/research
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: false
+          lfs: false
+
+      - name: Check out the ledger checkpoint
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: we-solve-staging/research
+          ref: ${{ steps.pins.outputs.ledger_sha }}
+          path: work/ledger
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: false
+          lfs: false
+
+      - name: Verify data provenance
+        env:
+          RESEARCH_SHA: ${{ steps.pins.outputs.research_sha }}
+          LEDGER_SHA: ${{ steps.pins.outputs.ledger_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C work/research rev-parse HEAD)" = "$RESEARCH_SHA"
+          test "$(git -C work/ledger rev-parse HEAD)" = "$LEDGER_SHA"
+          git -C work/research merge-base --is-ancestor "$RESEARCH_SHA" refs/remotes/origin/main
+          git -C work/ledger merge-base --is-ancestor "$LEDGER_SHA" refs/remotes/origin/automation-ledger
+          test -f work/ledger/events.jsonl
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.14'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.23.3'
+
+      - name: Install hash-locked platform dependencies
+        run: python -m pip install --require-hashes --no-deps -r requirements/dev.txt
+
+      - name: Cache rendered documents
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/tex-cache
+          key: tex-${{ runner.os }}-py3.12.14-node22-${{ hashFiles('site/renderer/**', 'rp/render/**', 'requirements/dev.txt') }}-${{ steps.pins.outputs.research_sha }}
+          restore-keys: |
+            tex-${{ runner.os }}-py3.12.14-node22-${{ hashFiles('site/renderer/**', 'rp/render/**', 'requirements/dev.txt') }}-
+
+      - name: Test trusted publication code
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python -m pytest
+
+      - name: Build and validate the static site without network access
+        env:
+          RESEARCH_SHA: ${{ steps.pins.outputs.research_sha }}
+          LEDGER_SHA: ${{ steps.pins.outputs.ledger_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_python="$(command -v python)"
+          mkdir -p "$RUNNER_TEMP/reports"
+          python - <<'PY'
+          import json
+          import os
+          import platform
+          import subprocess
+          from pathlib import Path
+
+          manifest = {
+              'platform_commit': os.environ['GITHUB_SHA'],
+              'research_repository': 'we-solve-staging/research',
+              'research_commit': os.environ['RESEARCH_SHA'],
+              'ledger_commit': os.environ['LEDGER_SHA'],
+              'python': platform.python_version(),
+              'node': subprocess.check_output(['node', '--version'], text=True).strip(),
+              'base_url': 'https://we-solve-staging.github.io/',
+          }
+          (Path(os.environ['RUNNER_TEMP']) / 'reports' / 'inputs.json').write_text(
+              json.dumps(manifest, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+          # The namespace has no external network; drop back to the runner UID/GID.
+          # No research scripts, dependencies, workflows or external artifacts run.
+          sudo env "PATH=$PATH" PYTHONDONTWRITEBYTECODE=1 \
+            unshare --net --setuid="$(id -u)" --setgid="$(id -g)" -- \
+            "$build_python" -m rp.site build \
+            --work "$GITHUB_WORKSPACE/work" \
+            --out "$GITHUB_WORKSPACE/_site" \
+            --base-url 'https://we-solve-staging.github.io/' \
+            --cache-dir "$RUNNER_TEMP/tex-cache" \
+            --packages-dir "$RUNNER_TEMP/revision-packages" \
+            --report "$RUNNER_TEMP/reports/site-report.json"
+
+      - name: Retain build evidence
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: site-build-evidence
+          path: ${{ runner.temp }}/reports/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload only the validated Pages directory
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site/
+          include-hidden-files: true
+          retention-days: 1
+
+  deploy:
+    # Milestone 2 publication is deliberately dispatched by a maintainer.
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'we-solve-staging/we-solve-staging.github.io' && github.ref == 'refs/heads/main' && needs.build.result == 'success'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the current run's artifact
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

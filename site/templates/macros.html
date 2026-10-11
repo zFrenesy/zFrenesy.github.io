@@ -1,0 +1,41 @@
+{% macro badge(text, tone='neutral') -%}<span class="badge badge-{{ tone }}">{{ text|replace('_', ' ') }}</span>{%- endmacro %}
+
+{% macro person_link(person) -%}
+  {% if person_url is defined and person.get('person_ref') %}<a href="{{ url(person_url(person)) }}" data-pagefind-filter="Person">{{ person.display_name|default(person.login_at_event, true) }}</a>{% elif person.url|default('') %}<a href="{{ url(person.url) }}">{{ person.display_name|default(person.login_at_event, true) }}</a>{% elif person.login_at_event|default('') %}<a href="{{ url('/people/' ~ person.login_at_event ~ '/') }}">{{ person.display_name|default(person.login_at_event, true) }}</a>{% else %}<span>{{ person.display_name|default('Unrecorded person', true) }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro contribution_card(item, show_problem=false) %}
+<article class="record-card contribution-card">
+  <div class="record-kicker"><a class="identifier" href="{{ url(item.revision_url) }}">{{ item.alias }}</a><span class="revision-label">{{ item.revision_label }}</span>{% if show_problem and item.problem %}<a class="subtle-link" href="{{ url(item.problem.url) }}">{{ item.problem.alias }}</a>{% endif %}</div>
+  <h3><a href="{{ url(item.revision_url) }}">{{ item.record.title }}</a></h3>
+  <div class="badge-row">{{ badge('Review' if item.is_review else item.claim_label, 'review' if item.is_review else 'claim') }}{{ badge({'ai_only': 'AI-generated', 'human_ai': 'Human + AI', 'human_only': 'Human', 'unknown': 'Attribution unknown'}.get(item.mode, item.mode)) }}{% if item.record.get('review') %}{{ badge(item.record.review.finding, 'review') }}{% elif item.is_review and item.legacy.get('raw_label') %}{{ badge('Legacy label: ' ~ item.legacy.raw_label, 'review') }}{% endif %}</div>
+  {% if item.record.get('claim') and item.record.claim.get('scope_statement') %}<p class="card-summary">{{ item.record.claim.scope_statement|truncate(220) }}</p>{% endif %}
+  <div class="record-meta"><span>Submitted by {{ person_link(item.record.attribution.submitter) }}</span>{% if item.model_names %}<span>{{ item.model_names|join(', ') }}</span>{% endif %}{% if item.sort_date %}<time datetime="{{ item.sort_date }}">{{ item.sort_date }}</time>{% endif %}</div>
+  <p class="record-evidence">{% if item.accepted_at %}Archived revision{% else %}Imported record{% endif %} · {{ 'Review finding; scope matters' if item.is_review else 'Correctness not established by this archive' }}</p>
+</article>
+{% endmacro %}
+
+{% macro problem_card(item) %}
+<article class="record-card problem-card">
+  <div class="record-kicker"><a class="identifier" href="{{ url(item.url) }}">{{ item.alias }}</a><span>{{ item.source[1] }}</span></div>
+  <h3><a href="{{ url(item.url) }}">{{ item.record.title }}</a></h3>
+  <div class="badge-row">{{ badge(item.record.kind) }}{% if item.source_status %}{{ badge('Source: ' ~ item.source_status.normalised_status, 'source') }}{% else %}{{ badge('Source status unknown', 'source') }}{% endif %}</div>
+  {% if item.record.get('topics') %}<p class="topic-line">{{ item.record.topics|join(' · ')|replace('-', ' ') }}</p>{% endif %}
+  <div class="record-meta"><span>{{ item.attempts|length }} {{ 'attempt' if item.attempts|length == 1 else 'attempts' }}</span><span>{{ item.reviews|length }} {{ 'review' if item.reviews|length == 1 else 'reviews' }}</span>{% if item.last_activity %}<span>Activity <time datetime="{{ item.last_activity }}">{{ item.last_activity }}</time></span>{% endif %}</div>
+</article>
+{% endmacro %}
+
+{% macro pager(pagination) %}
+{% if pagination and pagination.pages|default(1) > 1 %}<nav class="pagination" aria-label="Pagination">{% if pagination.previous %}<a class="button button-secondary" href="{{ url(pagination.previous) }}">← Previous</a>{% else %}<span></span>{% endif %}<span>Page {{ pagination.page }} of {{ pagination.pages }}{% if pagination.total|default(0) %} <span class="muted">· {{ pagination.total }} records</span>{% endif %}</span>{% if pagination.next %}<a class="button button-secondary" href="{{ url(pagination.next) }}">Next →</a>{% else %}<span></span>{% endif %}</nav>{% endif %}
+{% endmacro %}
+
+{% macro source_status(problem) %}
+{% set observation = problem.source_status %}
+<div class="status-source"><span class="eyebrow">Source status</span><strong>{{ (observation.normalised_status if observation else 'Unknown')|replace('_', ' ')|capitalize }}</strong>{% if observation %}<p>{% if observation.get('source_url') %}<a href="{{ observation.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">{{ observation.authority }} ↗</a>{% else %}{{ observation.authority }}{% endif %}</p><p class="small muted">Observed {{ observation.observed_at.value }}{% if observation.raw_status != observation.normalised_status %}<br>Source wording: {{ observation.raw_status }}{% endif %}</p>{% else %}<p>No authoritative observation recorded.</p>{% endif %}</div>
+{% endmacro %}
+
+{% macro rights_details(rights) %}
+{% if rights.get('holders') %}<p class="small muted">Rights holders: {{ rights.holders|join('; ') }}.</p>{% endif %}
+{% if rights.get('notes') %}<p class="small muted">{{ rights.notes }}</p>{% endif %}
+{% if rights.get('third_party') %}<ul class="rights-notes small">{% for item in rights.third_party %}<li>{{ item.description }}{% if item.get('licence') %} · {{ item.licence }}{% endif %}{% if item.get('source_url') %} · <a href="{{ item.source_url }}" rel="noopener noreferrer nofollow ugc" referrerpolicy="no-referrer">Original source ↗</a>{% endif %}</li>{% endfor %}</ul>{% endif %}
+{% endmacro %}

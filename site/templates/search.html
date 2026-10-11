@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block head %}{% if search_enabled|default(false) %}<link rel="stylesheet" href="{{ url('/pagefind/pagefind-ui.css') }}"><script src="{{ url('/pagefind/pagefind-ui.js') }}" defer></script><script src="{{ url('/assets/search.js') }}" defer></script>{% endif %}{% endblock %}
+{% block content %}
+<header class="page-heading"><p class="eyebrow">Find a thread to follow</p><h1>Search the archive</h1><p class="lede">Search problem statements, contributions, and reviews. Use the filters to focus on a discipline, source, or type of claim.</p></header>
+{% if search_enabled|default(false) %}<div id="search" class="search-results" data-pagefind-base="{{ url('/pagefind/') }}" data-search-status="search-status"></div><p id="search-status" class="small muted" role="status">Loading search…</p><noscript><div class="notice">Full-text search requires JavaScript. You can browse the discipline catalogues below.</div></noscript>{% else %}<div class="notice">Full-text search is not available in this build. Browse the discipline catalogues below.</div>{% endif %}
+<section class="section-block"><h2>Browse by discipline</h2><div class="collection-grid">{% for discipline in site.disciplines %}<a class="collection-link" href="{{ url(discipline.url) }}"><span>{{ discipline.name }}</span><span aria-hidden="true">→</span></a>{% endfor %}</div></section>
+{% endblock %}

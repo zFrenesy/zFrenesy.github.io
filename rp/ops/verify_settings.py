@@ -114,13 +114,15 @@ def verify(expected: Mapping[str, Any], fetcher: Fetcher, org: str | None = None
     )
     for template, settings in expected["repositories"].items():
         repo = template.format(org=org)
-        fields = {k: v for k, v in settings.items() if k not in ("branches", "environments")}
+        fields = {k: v for k, v in settings.items() if k not in ("branches", "environments", "pages")}
         checks += _fields(fetcher, f"/repos/{org}/{repo}", f"repo.{repo}", fields, REPO_FIELDS)
         for branch in settings.get("branches", []):
             status, _ = fetcher.get(f"/repos/{org}/{repo}/branches/{branch}")
             checks.append(Check(f"repo.{repo}.branch.{branch}", status == 200, f"GET returned {status}"))
         for name, branches in settings.get("environments", {}).items():
             checks.append(_environment(fetcher, org, repo, name, branches))
+        if settings.get("pages"):
+            checks += _fields(fetcher, f"/repos/{org}/{repo}/pages", f"repo.{repo}.pages", settings["pages"])
     return checks
 
 

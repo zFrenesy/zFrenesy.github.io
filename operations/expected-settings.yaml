@@ -19,6 +19,10 @@ selected_actions:
     - actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
     - actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+    - actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+    - actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
+    - actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
+    - actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
 workflow:
   default_workflow_permissions: read
   can_approve_pull_request_reviews: false
@@ -31,6 +35,10 @@ repositories:
     secret_scanning: enabled
     secret_scanning_push_protection: enabled
     branches: [main]
+    environments:
+      pages: [main]
+    pages:
+      build_type: workflow
   research:
     visibility: public
     default_branch: main

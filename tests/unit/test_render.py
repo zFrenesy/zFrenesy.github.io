@@ -86,6 +86,42 @@ def test_openai_scope_is_split_and_rendered_separately():
     assert "Scope relative" not in prepared.text and "OPENAI_CLAIM" not in prepared.text
     result = TexRenderer().render_many({"o": prepared})["o"]
     assert "$n=2$" in result.scope_html
+    assert result.has_math  # The body has no mathematics; scope still needs MathJax.
+
+
+def test_scope_and_body_both_contribute_labels_and_fallback_diagnostics():
+    result = render(r"\label{body}Body \unknownbody{content}.", scope=r"\label{scope}Scope \unknownscope{content}.")
+    assert set(result.labels) == {"body", "scope"}
+    assert result.source_boxes == 2
+    assert set(result.leftover_commands) >= {"unknownbody", "unknownscope"}
+    assert "tex-source-box" in result.html and "tex-source-box" in result.scope_html
+    assert tex.report({"document": result})["source_boxes"] == 2
+
+
+@pytest.mark.parametrize("failed_part", ["body", "scope", "both"])
+def test_body_and_scope_failures_preserve_both_fragments(monkeypatch, failed_part):
+    renderer = TexRenderer()
+    original_run = renderer._run
+
+    def run_with_failure(requests):
+        successful = [r for r in requests if failed_part != "both" and not r["id"].endswith("\0" + failed_part)]
+        results = original_run(successful)
+        for request in requests:
+            if request not in successful:
+                results[request["id"]] = {"id": request["id"], "error": "synthetic timeout"}
+        return results
+
+    monkeypatch.setattr(renderer, "_run", run_with_failure)
+    result = renderer.render_many({"a": Prepared("Body <unsafe> $x$.", scope="Scope <unsafe> $y$.")})["a"]
+    assert "Body" in result.html and "Scope" in result.scope_html
+    assert "<unsafe>" not in result.html and "<unsafe>" not in result.scope_html
+    assert result.source_boxes == (2 if failed_part == "both" else 1)
+    assert bool(result.error) == (failed_part in {"body", "both"})
+    assert bool(result.scope_error) == (failed_part in {"scope", "both"})
+    assert result.has_math == (failed_part != "both")
+    report = tex.report({"a": result})
+    assert report["errors"] == 1
+    assert report["scope_errors"] == (1 if failed_part in {"scope", "both"} else 0)
 
 
 def test_reused_writeup_preserves_collection():

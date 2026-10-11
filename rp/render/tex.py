@@ -4,8 +4,10 @@ Pipeline per document:
 
 1. ``prepare`` reproduces what the legacy site passed to ``formatTeX`` for that
    collection, using the unchanged legacy helpers in ``rp.render.legacy_prep``.
-2. ``site/renderer/render-batch.js`` runs the extracted ``formatTeX`` (and the
-   Economics normaliser) under Node in a sandboxed ``vm`` context, in one batch.
+2. ``site/renderer/render-batch.js`` runs the trusted extracted ``formatTeX``
+   (and Economics normaliser) under Node in a ``vm`` context with timeouts.
+   Input is data only; ``vm`` is not a security boundary. The CI build step
+   supplies operating-system network isolation separately.
 3. Post-processing: paragraphs that still contain TeX commands outside maths
    become escaped source boxes (never typeset); ``nh3`` applies an allowlist;
    ``\\label`` keys are collected for the reference index.
@@ -37,7 +39,7 @@ __all__ = ["Prepared", "RenderError", "Rendered", "TexRenderer", "prepare", "ren
 RENDERER_DIR = Path(__file__).resolve().parents[2] / "site" / "renderer"
 RUNNER = RENDERER_DIR / "render-batch.js"
 BUNDLE_FILES = ("render-batch.js", "format-tex.js", "tex-bare-math.js", "economics-normalize.js")
-POSTPROCESS_VERSION = "post/2"
+POSTPROCESS_VERSION = "post/3"
 
 KINDS = (
     "erdos_attempt",
@@ -81,6 +83,7 @@ _TAG = re.compile(r"<[^>]+>")
 _COMMAND = re.compile(r"\\([A-Za-z]+)")
 _BLOCK = re.compile(r"<(p|li|h[1-6]|td)\b[^>]*>([\s\S]*?)</\1>")
 _LABEL = re.compile(r'data-tex-label="([^"]*)"')
+_LABEL_SPAN = re.compile(r'<span\b(?=[^>]*\bdata-tex-label=)[^>]*>\s*</span>')
 _HAS_MATH = re.compile(r"\$|\\\(|\\\[|\\begin\{(?:equation|align|gather|multline|flalign|eqnarray|displaymath)")
 
 
@@ -106,6 +109,7 @@ class Rendered:
     source_boxes: int = 0
     leftover_commands: tuple[str, ...] = field(default=())
     error: str | None = None
+    scope_error: str | None = None
 
 
 def _openai_body(content: str) -> str:
@@ -189,8 +193,12 @@ def _source_boxes(html: str) -> tuple[str, int, list[str]]:
             return match.group(0)
         count += 1
         leftovers.extend(commands)
+        # Keep anchors outside literal source content so the build-time
+        # reference resolver can still link readers to an unsupported passage.
+        # These generated empty spans pass through the same sanitizer below.
+        labels = "".join(_LABEL_SPAN.findall(match.group(2)))
         source = html_lib.escape(html_lib.unescape(_TAG.sub("", match.group(2))).strip())
-        return f'<pre class="tex-source-box mathjax-ignore" title="Shown as source: this passage could not be converted">{source}</pre>'
+        return labels + f'<pre class="tex-source-box mathjax-ignore" title="Shown as source: this passage could not be converted">{source}</pre>'
 
     return _BLOCK.sub(replace, html), count, leftovers
 
@@ -277,20 +285,30 @@ class TexRenderer:
         for doc_id, prepared in documents.items():
             body = outputs[f"{doc_id}\0body"]
             scope = outputs.get(f"{doc_id}\0scope")
-            if body["error"] is not None:
-                fallback = f'<pre class="tex-source-box mathjax-ignore">{html_lib.escape(prepared.text)}</pre>'
-                results[doc_id] = Rendered(fallback, error=body["error"], source_boxes=1)
-                continue
-            html = body["html"]
+            body_error = body["error"]
+            scope_error = scope["error"] if scope else None
+            html = body["html"] if body_error is None else self._fallback(prepared.text)
+            scope_html = (scope["html"] if scope_error is None else self._fallback(prepared.scope)) if scope else None
+            # Both fragments are displayed on the same page. Failure in either
+            # must preserve the other, and neither may disappear from diagnostics.
+            successful_html = (body["html"] or "") + ((scope["html"] or "") if scope else "")
+            all_html = html + (scope_html or "")
             results[doc_id] = Rendered(
                 html=html,
-                scope_html=scope["html"] if scope and scope["error"] is None else None,
-                has_math=bool(_HAS_MATH.search(html)),
-                labels=tuple(dict.fromkeys(_LABEL.findall(html))),
-                source_boxes=body["boxes"],
-                leftover_commands=tuple(body["leftovers"]),
+                scope_html=scope_html,
+                has_math=bool(_HAS_MATH.search(_LITERAL.sub("", successful_html))),
+                labels=tuple(dict.fromkeys(_LABEL.findall(all_html))),
+                source_boxes=(1 if body_error is not None else body["boxes"])
+                             + ((1 if scope_error is not None else scope["boxes"]) if scope else 0),
+                leftover_commands=tuple(body.get("leftovers", ())) + tuple(scope.get("leftovers", ()) if scope else ()),
+                error=body_error,
+                scope_error=scope_error,
             )
         return results
+
+    @staticmethod
+    def _fallback(source: str) -> str:
+        return f'<pre class="tex-source-box mathjax-ignore">{html_lib.escape(source)}</pre>'
 
     def _cache_get(self, key: str) -> dict | None:
         if self.cache_dir is None:
@@ -322,7 +340,8 @@ def report(results: Mapping[str, Rendered]) -> dict:
         commands.update(r.leftover_commands)
     return {
         "documents": len(results),
-        "errors": sum(1 for r in results.values() if r.error),
+        "errors": sum(1 for r in results.values() if r.error or r.scope_error),
+        "scope_errors": sum(1 for r in results.values() if r.scope_error),
         "documents_with_source_boxes": sum(1 for r in results.values() if r.source_boxes),
         "source_boxes": sum(r.source_boxes for r in results.values()),
         "top_leftover_commands": commands.most_common(30),
