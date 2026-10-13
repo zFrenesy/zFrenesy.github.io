@@ -32,7 +32,7 @@ python -m rp.site build \
   --out /tmp/we-solve-site \
   --cache-dir /tmp/we-solve-tex-cache \
   --packages-dir /tmp/we-solve-packages \
-  --base-url https://we-solve-staging.github.io/ \
+  --base-url https://zfrenesy.github.io \
   --report /tmp/we-solve-report.json
 ```
 
